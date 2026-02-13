@@ -1,0 +1,330 @@
+/* ========================================
+   Loading Screen - HablaGT
+======================================== */
+
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+/* Fondo */
+.loading-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.bg-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.4) 0%, rgba(30, 41, 59, 0.45) 50%, rgba(15, 23, 42, 0.4) 100%);
+}
+
+.bg-pattern {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    radial-gradient(circle at 20% 80%, rgba(14, 165, 233, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(139, 92, 246, 0.04) 0%, transparent 40%);
+  animation: bgPulse 8s ease-in-out infinite;
+}
+
+@keyframes bgPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Contenido principal */
+.loading-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  z-index: 10;
+}
+
+/* Logo */
+.loading-logo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-circle {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-inner {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #0ea5e9, #6366f1);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  color: white;
+  box-shadow:
+    0 10px 40px rgba(14, 165, 233, 0.4),
+    0 0 60px rgba(99, 102, 241, 0.2);
+  z-index: 5;
+}
+
+/* Anillos giratorios */
+.logo-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid transparent;
+}
+
+.ring-1 {
+  width: 100px;
+  height: 100px;
+  border-top-color: #0ea5e9;
+  border-right-color: #0ea5e9;
+}
+
+.ring-2 {
+  width: 120px;
+  height: 120px;
+  border-top-color: #6366f1;
+  border-left-color: #6366f1;
+}
+
+.ring-3 {
+  width: 140px;
+  height: 140px;
+  border-bottom-color: #8b5cf6;
+  border-right-color: #8b5cf6;
+  opacity: 0.5;
+}
+
+/* Pulsos */
+.pulse-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  border: 2px solid #0ea5e9;
+  animation: pulse 2s ease-out infinite;
+}
+
+.pulse-1 {
+  animation-delay: 0s;
+}
+
+.pulse-2 {
+  animation-delay: 0.5s;
+}
+
+.pulse-3 {
+  animation-delay: 1s;
+}
+
+@keyframes pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2);
+    opacity: 0;
+  }
+}
+
+/* Título */
+.loading-title {
+  text-align: center;
+}
+
+.loading-title h1 {
+  font-size: 3rem;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -1px;
+}
+
+.title-habla {
+  color: white;
+}
+
+.title-gt {
+  background: linear-gradient(135deg, #0ea5e9, #6366f1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.loading-subtitle {
+  margin: 8px 0 0;
+  font-size: 1rem;
+  color: #64748b;
+  font-weight: 400;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* Indicador de carga */
+.loading-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.loader-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.loader-dots span {
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(135deg, #0ea5e9, #6366f1);
+  border-radius: 50%;
+  box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4);
+}
+
+.loading-text {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* Barra de progreso */
+.loading-bar {
+  width: 200px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.loading-bar-progress {
+  height: 100%;
+  background: linear-gradient(90deg, #0ea5e9, #6366f1, #8b5cf6);
+  border-radius: 2px;
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.5);
+}
+
+/* Elementos flotantes decorativos */
+.floating-elements {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.floating-el {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.05;
+}
+
+.el-1 {
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(135deg, #0ea5e9, transparent);
+  top: -100px;
+  right: -100px;
+}
+
+.el-2 {
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(135deg, #6366f1, transparent);
+  bottom: -50px;
+  left: -50px;
+}
+
+.el-3 {
+  width: 150px;
+  height: 150px;
+  background: linear-gradient(135deg, #8b5cf6, transparent);
+  top: 50%;
+  left: 10%;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .loading-title h1 {
+    font-size: 2.5rem;
+  }
+
+  .loading-subtitle {
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+  }
+
+  .logo-inner {
+    width: 60px;
+    height: 60px;
+    font-size: 30px;
+    border-radius: 16px;
+  }
+
+  .logo-circle {
+    width: 100px;
+    height: 100px;
+  }
+
+  .ring-1 {
+    width: 80px;
+    height: 80px;
+  }
+
+  .ring-2 {
+    width: 100px;
+    height: 100px;
+  }
+
+  .ring-3 {
+    width: 120px;
+    height: 120px;
+  }
+
+  .pulse {
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+  }
+}

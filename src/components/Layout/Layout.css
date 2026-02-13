@@ -1,0 +1,56 @@
+/* ========================================
+   Layout Styles
+======================================== */
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.main-wrapper {
+  flex: 1;
+  margin-left: 260px;
+  display: flex;
+  flex-direction: column;
+  transition: margin-left 0.3s ease;
+  min-width: 0;
+  height: 100vh;
+}
+
+/* Área de contenido (main + softphone) */
+.content-area {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.main-content {
+  flex: 1;
+  padding: 32px;
+  padding-bottom: 40px;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+/* Cuando el sidebar está colapsado */
+.sidebar.collapsed ~ .main-wrapper {
+  margin-left: 80px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .main-wrapper {
+    margin-left: 80px;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-wrapper {
+    margin-left: 0;
+  }
+
+  .main-content {
+    padding: 20px;
+  }
+}
