@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
+import { extensionService, agentAdminService, tenantService, integrationService } from '../../services';
+import { useLoading } from '../../context/LoadingContext';
+import { useToast } from '../../context/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiSettings,
   FiPhone,
   FiUsers,
   FiSliders,
+  FiServer,
   FiPlus,
   FiEdit2,
   FiTrash2,
@@ -42,94 +46,297 @@ const agentesData = [
 ];
 
 const Configuracion = () => {
+  const { showLoading, hideLoading } = useLoading();
+  const toast = useToast();
   const [tabActiva, setTabActiva] = useState('extensiones');
   const [busqueda, setBusqueda] = useState('');
 
-  // Estado para extensiones
-  const [extensiones, setExtensiones] = useState(extensionesData);
+  const [extensiones, setExtensiones] = useState([]);
   const [modalExtension, setModalExtension] = useState({ open: false, modo: 'crear', data: null });
 
-  // Estado para agentes
-  const [agentes, setAgentes] = useState(agentesData);
+  const [agentes, setAgentes] = useState([]);
   const [modalAgente, setModalAgente] = useState({ open: false, modo: 'crear', data: null });
 
-  // Extensiones disponibles (sin asignar)
-  const extensionesDisponibles = extensiones.filter(ext => !ext.agente && ext.estado === 'activa');
+  const [tenant, setTenant] = useState(null);
+  const [tenantEdit, setTenantEdit] = useState({ nombre: '', email: '', plan: '', timezone: '' });
+  const [savingTenant, setSavingTenant] = useState(false);
+
+  const [integration, setIntegration] = useState(null);
+  const [integrationForm, setIntegrationForm] = useState({
+    freepbx_enabled: false,
+    freepbx_provider: 'self',
+    freepbx_base_url: '',
+    freepbx_username: '',
+    freepbx_password: '',
+    freepbx_api_token: '',
+    freepbx_recordings_url: '',
+    voiceai_enabled: false,
+    voiceai_provider: 'stub',
+    voiceai_api_key: '',
+    voiceai_voice_id: '',
+    voiceai_agent_id: '',
+    voiceai_base_url: '',
+  });
+  const [savingIntegration, setSavingIntegration] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      showLoading('Cargando configuración...');
+      try {
+        const [exts, ags, tn] = await Promise.all([
+          extensionService.list(),
+          agentAdminService.list({ page_size: 100 }),
+          tenantService.get().catch(() => null),
+        ]);
+        setExtensiones(
+          (exts?.items || exts || []).map((e) => ({
+            id: e.id,
+            extension: e.extension,
+            nombre: e.nombre,
+            tipo: e.tipo || 'fija',
+            estado: e.estado || 'activa',
+            agente_id: e.agente_id,
+            agente: e.agente_nombre || '',
+          }))
+        );
+        setAgentes(
+          (ags?.items || ags || []).map((a) => ({
+            id: a.id,
+            usuario: a.username || a.usuario,
+            nombre: a.full_name || a.fullName || a.nombre,
+            email: a.email,
+            rol: a.role || a.rol,
+            extension: a.extension || null,
+            estado: a.is_active === false ? 'inactivo' : 'activo',
+          }))
+        );
+        if (tn) {
+          setTenant(tn);
+          setTenantEdit({
+            nombre: tn.nombre || '',
+            email: tn.email || '',
+            plan: tn.plan || '',
+            timezone: tn.timezone || 'UTC',
+          });
+          try {
+            const integ = await integrationService.get(tn.id);
+            setIntegration(integ);
+            setIntegrationForm({
+              freepbx_enabled: integ?.freepbx?.enabled || false,
+              freepbx_provider: integ?.freepbx?.provider || 'self',
+              freepbx_base_url: integ?.freepbx?.base_url || '',
+              freepbx_username: '',
+              freepbx_password: '',
+              freepbx_api_token: '',
+              freepbx_recordings_url: integ?.freepbx?.recordings_url || '',
+              voiceai_enabled: integ?.voice_ai?.enabled || false,
+              voiceai_provider: integ?.voice_ai?.provider || 'stub',
+              voiceai_api_key: '',
+              voiceai_voice_id: integ?.voice_ai?.voice_id || '',
+              voiceai_agent_id: integ?.voice_ai?.agent_id || '',
+              voiceai_base_url: integ?.voice_ai?.base_url || '',
+            });
+          } catch (err) {
+            console.error('integration load error', err);
+          }
+        }
+      } catch (err) {
+        console.error('configuracion load error', err);
+      } finally {
+        hideLoading();
+      }
+    };
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const extensionesDisponibles = extensiones.filter((ext) => !ext.agente_id && ext.estado === 'activa');
 
   const tabs = [
     { id: 'extensiones', label: 'Extensiones', icon: FiPhone },
     { id: 'agentes', label: 'Agentes', icon: FiUsers },
+    { id: 'integraciones', label: 'Integraciones', icon: FiServer },
     { id: 'general', label: 'General', icon: FiSliders },
   ];
 
-  // Filtrar datos según búsqueda
-  const extensionesFiltradas = extensiones.filter(ext =>
-    ext.extension.includes(busqueda) ||
-    ext.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-    (ext.agente && ext.agente.toLowerCase().includes(busqueda.toLowerCase()))
+  const extensionesFiltradas = extensiones.filter((ext) =>
+    (ext.extension || '').includes(busqueda) ||
+    (ext.nombre || '').toLowerCase().includes(busqueda.toLowerCase()) ||
+    (ext.agente || '').toLowerCase().includes(busqueda.toLowerCase())
   );
 
-  const agentesFiltrados = agentes.filter(ag =>
-    ag.usuario.toLowerCase().includes(busqueda.toLowerCase()) ||
-    ag.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-    (ag.email && ag.email.toLowerCase().includes(busqueda.toLowerCase()))
+  const agentesFiltrados = agentes.filter((ag) =>
+    (ag.usuario || '').toLowerCase().includes(busqueda.toLowerCase()) ||
+    (ag.nombre || '').toLowerCase().includes(busqueda.toLowerCase()) ||
+    (ag.email || '').toLowerCase().includes(busqueda.toLowerCase())
   );
 
   // Handlers para extensiones
-  const handleGuardarExtension = (data) => {
-    if (modalExtension.modo === 'crear') {
-      setExtensiones([...extensiones, { ...data, id: Date.now() }]);
-    } else {
-      setExtensiones(extensiones.map(ext => ext.id === data.id ? data : ext));
+  const handleGuardarExtension = async (data) => {
+    showLoading('Guardando extensión...');
+    try {
+      const payload = {
+        extension: data.extension,
+        nombre: data.nombre,
+        tipo: data.tipo || 'fija',
+        estado: data.estado || 'activa',
+      };
+      if (modalExtension.modo === 'crear') {
+        const created = await extensionService.create(payload);
+        const c = created?.extension || created;
+        setExtensiones([...extensiones, {
+          id: c.id,
+          extension: c.extension,
+          nombre: c.nombre,
+          tipo: c.tipo,
+          estado: c.estado,
+          agente_id: null,
+          agente: '',
+        }]);
+      } else {
+        const updated = await extensionService.update(data.id, payload);
+        const c = updated?.extension || updated;
+        setExtensiones(extensiones.map((ext) => ext.id === data.id ? { ...ext, ...c } : ext));
+      }
+      setModalExtension({ open: false, modo: 'crear', data: null });
+    } catch (err) {
+      toast.error('Error guardando extensión: ' + (err?.response?.data?.error?.message || err.message));
+    } finally {
+      hideLoading();
     }
-    setModalExtension({ open: false, modo: 'crear', data: null });
   };
 
-  const handleEliminarExtension = (id) => {
-    if (confirm('¿Estás seguro de eliminar esta extensión?')) {
-      setExtensiones(extensiones.filter(ext => ext.id !== id));
+  const handleEliminarExtension = async (id) => {
+    if (!confirm('¿Estás seguro de eliminar esta extensión?')) return;
+    showLoading('Eliminando...');
+    try {
+      await extensionService.remove(id);
+      setExtensiones(extensiones.filter((ext) => ext.id !== id));
+    } catch (err) {
+      toast.error('Error eliminando extensión: ' + (err?.response?.data?.error?.message || err.message));
+    } finally {
+      hideLoading();
     }
   };
 
-  // Handlers para agentes
-  const handleGuardarAgente = (data) => {
-    if (modalAgente.modo === 'crear') {
-      setAgentes([...agentes, { ...data, id: Date.now() }]);
-      // Actualizar extensión si se asignó una
-      if (data.extension) {
-        setExtensiones(extensiones.map(ext =>
-          ext.extension === data.extension ? { ...ext, agente: data.nombre } : ext
-        ));
+  const handleGuardarAgente = async (data) => {
+    showLoading('Guardando agente...');
+    try {
+      const payload = {
+        username: data.usuario,
+        full_name: data.nombre,
+        email: data.email || '',
+        role: data.rol,
+        extension: data.extension || '',
+        is_active: data.estado === 'activo',
+        password: data.password || undefined,
+      };
+      if (modalAgente.modo === 'crear') {
+        const created = await agentAdminService.create(payload);
+        const c = created?.agent || created;
+        setAgentes([...agentes, {
+          id: c.id,
+          usuario: c.username || c.usuario,
+          nombre: c.full_name || c.fullName || c.nombre,
+          email: c.email,
+          rol: c.role || c.rol,
+          extension: c.extension || null,
+          estado: c.is_active === false ? 'inactivo' : 'activo',
+        }]);
+        if (payload.extension) {
+          await loadExtensiones();
+        }
+      } else {
+        const updated = await agentAdminService.update(data.id, payload);
+        const c = updated?.agent || updated;
+        setAgentes(agentes.map((ag) => ag.id === data.id ? {
+          ...ag,
+          nombre: c.full_name || c.fullName || c.nombre,
+          email: c.email,
+          rol: c.role || c.rol,
+          extension: c.extension || null,
+          estado: c.is_active === false ? 'inactivo' : 'activo',
+        } : ag));
+        await loadExtensiones();
       }
-    } else {
-      // Limpiar extensión anterior si cambió
-      const agenteAnterior = agentes.find(a => a.id === data.id);
-      if (agenteAnterior?.extension && agenteAnterior.extension !== data.extension) {
-        setExtensiones(extensiones.map(ext =>
-          ext.extension === agenteAnterior.extension ? { ...ext, agente: null } : ext
-        ));
-      }
-      // Asignar nueva extensión
-      if (data.extension) {
-        setExtensiones(extensiones.map(ext =>
-          ext.extension === data.extension ? { ...ext, agente: data.nombre } : ext
-        ));
-      }
-      setAgentes(agentes.map(ag => ag.id === data.id ? data : ag));
+      setModalAgente({ open: false, modo: 'crear', data: null });
+    } catch (err) {
+      toast.error('Error guardando agente: ' + (err?.response?.data?.error?.message || err.message));
+    } finally {
+      hideLoading();
     }
-    setModalAgente({ open: false, modo: 'crear', data: null });
   };
 
-  const handleEliminarAgente = (id) => {
-    const agente = agentes.find(a => a.id === id);
-    if (confirm('¿Estás seguro de eliminar este agente?')) {
-      // Liberar extensión
-      if (agente?.extension) {
-        setExtensiones(extensiones.map(ext =>
-          ext.extension === agente.extension ? { ...ext, agente: null } : ext
-        ));
-      }
-      setAgentes(agentes.filter(ag => ag.id !== id));
+  const loadExtensiones = async () => {
+    try {
+      const exts = await extensionService.list();
+      setExtensiones(
+        (exts?.items || exts || []).map((e) => ({
+          id: e.id,
+          extension: e.extension,
+          nombre: e.nombre,
+          tipo: e.tipo || 'fija',
+          estado: e.estado || 'activa',
+          agente_id: e.agente_id,
+          agente: e.agente_nombre || '',
+        }))
+      );
+    } catch (err) {
+      console.error('reload extensiones', err);
+    }
+  };
+
+  const handleEliminarAgente = async (id) => {
+    if (!confirm('¿Estás seguro de eliminar este agente?')) return;
+    showLoading('Eliminando...');
+    try {
+      await agentAdminService.remove(id);
+      setAgentes(agentes.filter((ag) => ag.id !== id));
+      await loadExtensiones();
+    } catch (err) {
+      toast.error('Error eliminando agente: ' + (err?.response?.data?.error?.message || err.message));
+    } finally {
+      hideLoading();
+    }
+  };
+
+  const handleSaveTenant = async () => {
+    setSavingTenant(true);
+    showLoading('Guardando tenant...');
+    try {
+      const updated = await tenantService.update(tenantEdit);
+      setTenant(updated);
+    } catch (err) {
+      toast.error('Error guardando tenant: ' + (err?.response?.data?.error?.message || err.message));
+    } finally {
+      setSavingTenant(false);
+      hideLoading();
+    }
+  };
+
+  const handleSaveIntegration = async () => {
+    if (!tenant) return;
+    setSavingIntegration(true);
+    showLoading('Guardando integraciones...');
+    try {
+      const payload = { ...integrationForm };
+      Object.keys(payload).forEach((k) => {
+        if (payload[k] === '') delete payload[k];
+      });
+      const updated = await integrationService.update(tenant.id, payload);
+      setIntegration(updated);
+      setIntegrationForm((prev) => ({
+        ...prev,
+        freepbx_username: '',
+        freepbx_password: '',
+        freepbx_api_token: '',
+        voiceai_api_key: '',
+      }));
+    } catch (err) {
+      toast.error('Error guardando integración: ' + (err?.response?.data?.error?.message || err.message));
+    } finally {
+      setSavingIntegration(false);
+      hideLoading();
     }
   };
 
@@ -373,6 +580,194 @@ const Configuracion = () => {
           </motion.div>
         )}
 
+        {tabActiva === 'integraciones' && (
+          <motion.div
+            key="integraciones"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="config-content"
+          >
+            <div className="integraciones-grid">
+              <div className="setting-card">
+                <div className="card-header-row">
+                  <h3>FreePBX / Proveedor de llamadas</h3>
+                  <label className="toggle">
+                    <input
+                      type="checkbox"
+                      checked={integrationForm.freepbx_enabled}
+                      onChange={(e) => setIntegrationForm({ ...integrationForm, freepbx_enabled: e.target.checked })}
+                    />
+                    <span>{integrationForm.freepbx_enabled ? 'Activado' : 'Desactivado'}</span>
+                  </label>
+                </div>
+                {integration?.freepbx && (
+                  <div className="cred-status">
+                    <span className={integration.freepbx.has_password ? 'ok' : 'missing'}>
+                      Contraseña: {integration.freepbx.has_password ? 'configurada' : 'falta'}
+                    </span>
+                    <span className={integration.freepbx.has_api_token ? 'ok' : 'missing'}>
+                      API Token: {integration.freepbx.has_api_token ? 'configurado' : 'falta'}
+                    </span>
+                  </div>
+                )}
+                <div className="form-group">
+                  <label>Proveedor</label>
+                  <select
+                    value={integrationForm.freepbx_provider}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, freepbx_provider: e.target.value })}
+                    disabled={!integrationForm.freepbx_enabled}
+                  >
+                    <option value="self">Self-hosted (FreePBX local)</option>
+                    <option value="cloud">Cloud (FreePBX hosted)</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Base URL (API + ARI)</label>
+                  <input
+                    type="url"
+                    placeholder="https://pbx.example.com"
+                    value={integrationForm.freepbx_base_url}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, freepbx_base_url: e.target.value })}
+                    disabled={!integrationForm.freepbx_enabled}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Usuario</label>
+                  <input
+                    type="text"
+                    placeholder="admin"
+                    value={integrationForm.freepbx_username}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, freepbx_username: e.target.value })}
+                    disabled={!integrationForm.freepbx_enabled}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Contraseña {integration?.freepbx?.has_password && <span className="hint">(dejar vacío para conservar)</span>}</label>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={integrationForm.freepbx_password}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, freepbx_password: e.target.value })}
+                    disabled={!integrationForm.freepbx_enabled}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>API Token {integration?.freepbx?.has_api_token && <span className="hint">(dejar vacío para conservar)</span>}</label>
+                  <input
+                    type="password"
+                    placeholder="opcional"
+                    value={integrationForm.freepbx_api_token}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, freepbx_api_token: e.target.value })}
+                    disabled={!integrationForm.freepbx_enabled}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>URL pública de grabaciones</label>
+                  <input
+                    type="url"
+                    placeholder="https://pbx.example.com/recordings"
+                    value={integrationForm.freepbx_recordings_url}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, freepbx_recordings_url: e.target.value })}
+                    disabled={!integrationForm.freepbx_enabled}
+                  />
+                  <small>Para que el front pueda reproducir las grabaciones en Reportería.</small>
+                </div>
+              </div>
+
+              <div className="setting-card">
+                <div className="card-header-row">
+                  <h3>Operadora IA (Voice AI)</h3>
+                  <label className="toggle">
+                    <input
+                      type="checkbox"
+                      checked={integrationForm.voiceai_enabled}
+                      onChange={(e) => setIntegrationForm({ ...integrationForm, voiceai_enabled: e.target.checked })}
+                    />
+                    <span>{integrationForm.voiceai_enabled ? 'Activado' : 'Desactivado'}</span>
+                  </label>
+                </div>
+                {integration?.voice_ai && (
+                  <div className="cred-status">
+                    <span className={integration.voice_ai.has_key ? 'ok' : 'missing'}>
+                      API Key: {integration.voice_ai.has_key ? 'configurada' : 'falta'}
+                    </span>
+                  </div>
+                )}
+                <div className="form-group">
+                  <label>Proveedor</label>
+                  <select
+                    value={integrationForm.voiceai_provider}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, voiceai_provider: e.target.value })}
+                    disabled={!integrationForm.voiceai_enabled}
+                  >
+                    <option value="stub">Stub (dev)</option>
+                    <option value="elevenlabs">ElevenLabs</option>
+                    <option value="openai">OpenAI Realtime</option>
+                    <option value="cartesia">Cartesia</option>
+                    <option value="vapi">VAPI</option>
+                    <option value="retell">Retell</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>API Key {integration?.voice_ai?.has_key && <span className="hint">(dejar vacío para conservar)</span>}</label>
+                  <input
+                    type="password"
+                    placeholder="sk_..."
+                    value={integrationForm.voiceai_api_key}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, voiceai_api_key: e.target.value })}
+                    disabled={!integrationForm.voiceai_enabled}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Voice ID</label>
+                  <input
+                    type="text"
+                    placeholder="ej. 21m00Tcm4TlvDq8ikWAM (Rachel)"
+                    value={integrationForm.voiceai_voice_id}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, voiceai_voice_id: e.target.value })}
+                    disabled={!integrationForm.voiceai_enabled}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Agent ID (opcional)</label>
+                  <input
+                    type="text"
+                    value={integrationForm.voiceai_agent_id}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, voiceai_agent_id: e.target.value })}
+                    disabled={!integrationForm.voiceai_enabled}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Base URL (opcional, para OpenAI-compatible)</label>
+                  <input
+                    type="url"
+                    placeholder="https://api.openai.com/v1"
+                    value={integrationForm.voiceai_base_url}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, voiceai_base_url: e.target.value })}
+                    disabled={!integrationForm.voiceai_enabled}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="config-footer-actions">
+              <button
+                className="btn-primary"
+                onClick={handleSaveIntegration}
+                disabled={savingIntegration}
+              >
+                {savingIntegration ? 'Guardando...' : 'Guardar integraciones'}
+              </button>
+              {integration?.updated_at && (
+                <span className="updated-hint">
+                  Última actualización: {new Date(integration.updated_at).toLocaleString()}
+                </span>
+              )}
+            </div>
+          </motion.div>
+        )}
+
         {tabActiva === 'general' && (
           <motion.div
             key="general"
@@ -383,8 +778,51 @@ const Configuracion = () => {
           >
             <div className="general-settings">
               <div className="setting-card">
-                <h3>Configuración del Sistema</h3>
-                <p>Ajustes generales próximamente...</p>
+                <h3>Configuración del Tenant</h3>
+                <div className="form-group" style={{ marginTop: '1rem' }}>
+                  <label>Nombre</label>
+                  <input
+                    type="text"
+                    value={tenantEdit.nombre}
+                    onChange={(e) => setTenantEdit({ ...tenantEdit, nombre: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Email</label>
+                  <input
+                    type="email"
+                    value={tenantEdit.email}
+                    onChange={(e) => setTenantEdit({ ...tenantEdit, email: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Plan</label>
+                  <input
+                    type="text"
+                    value={tenantEdit.plan}
+                    onChange={(e) => setTenantEdit({ ...tenantEdit, plan: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Zona horaria</label>
+                  <input
+                    type="text"
+                    value={tenantEdit.timezone}
+                    onChange={(e) => setTenantEdit({ ...tenantEdit, timezone: e.target.value })}
+                  />
+                </div>
+                <button
+                  className="btn-primary"
+                  onClick={handleSaveTenant}
+                  disabled={savingTenant}
+                >
+                  {savingTenant ? 'Guardando...' : 'Guardar cambios'}
+                </button>
+                {tenant && (
+                  <div style={{ marginTop: '1rem', color: '#888', fontSize: '0.85rem' }}>
+                    Slug: <strong>{tenant.slug}</strong> · Estado: {tenant.estado}
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>

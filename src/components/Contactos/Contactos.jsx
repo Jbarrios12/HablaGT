@@ -23,6 +23,9 @@ import {
   FiPhoneOutgoing,
   FiSettings
 } from 'react-icons/fi';
+import { contactService, contactTagService } from '../../services';
+import { useLoading } from '../../context/LoadingContext';
+import { useToast } from '../../context/ToastContext';
 import './Contactos.css';
 
 // Datos de ejemplo - Contactos
@@ -136,15 +139,58 @@ const coloresDisponibles = [
 ];
 
 const Contactos = () => {
-  const [contactos, setContactos] = useState(contactosData);
+  const { showLoading, hideLoading } = useLoading();
+  const toast = useToast();
+  const [contactos, setContactos] = useState([]);
   const [busqueda, setBusqueda] = useState('');
   const [filtroEtiqueta, setFiltroEtiqueta] = useState('todos');
   const [modalContacto, setModalContacto] = useState({ open: false, modo: 'crear', data: null });
   const [contactoDetalle, setContactoDetalle] = useState(null);
 
   // Estado para categorías/etiquetas
-  const [etiquetasConfig, setEtiquetasConfig] = useState(etiquetasDefault);
+  const [etiquetasConfig, setEtiquetasConfig] = useState({});
   const [modalCategorias, setModalCategorias] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      showLoading('Cargando contactos...');
+      try {
+        const [list, tags] = await Promise.all([
+          contactService.list(),
+          contactTagService.list(),
+        ]);
+        const items = list?.items || list || [];
+        const tagMap = {};
+        (tags?.items || tags || []).forEach((t) => {
+          tagMap[t.key || t.Key] = {
+            label: t.label || t.Label,
+            color: t.color || t.Color || '#0ea5e9',
+          };
+        });
+        setContactos(items.map((c) => ({
+          id: c.id,
+          nombre: c.nombre,
+          empresa: c.empresa || '',
+          telefonoPrincipal: c.telefono_principal || c.telefonoPrincipal || '',
+          telefonoMovil: c.telefono_movil || c.telefonoMovil || '',
+          telefonoTrabajo: c.telefono_trabajo || c.telefonoTrabajo || '',
+          email: c.email || '',
+          direccion: c.direccion || '',
+          notas: c.notas || '',
+          etiquetas: c.etiquetas || [],
+          fechaCreacion: c.created_at ? c.created_at.split('T')[0] : '',
+          ultimoContacto: c.ultimo_contacto || null,
+        })));
+        setEtiquetasConfig(Object.keys(tagMap).length ? tagMap : etiquetasDefault);
+      } catch (err) {
+        console.error('Error cargando contactos', err);
+      } finally {
+        hideLoading();
+      }
+    };
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Filtrar contactos
   const contactosFiltrados = contactos.filter(contacto => {
@@ -154,7 +200,7 @@ const Contactos = () => {
       contacto.telefonoPrincipal.includes(busqueda) ||
       contacto.email.toLowerCase().includes(busqueda.toLowerCase());
 
-    const matchEtiqueta = filtroEtiqueta === 'todos' || contacto.etiquetas.includes(filtroEtiqueta);
+    const matchEtiqueta = filtroEtiqueta === 'todos' || (contacto.etiquetas || []).includes(filtroEtiqueta);
 
     return matchBusqueda && matchEtiqueta;
   });
@@ -162,41 +208,86 @@ const Contactos = () => {
   // Contar por etiqueta
   const contarPorEtiqueta = (etiqueta) => {
     if (etiqueta === 'todos') return contactos.length;
-    return contactos.filter(c => c.etiquetas.includes(etiqueta)).length;
+    return contactos.filter(c => (c.etiquetas || []).includes(etiqueta)).length;
   };
 
   // Handlers
-  const handleGuardarContacto = (data) => {
-    if (modalContacto.modo === 'crear') {
-      const nuevoContacto = {
-        ...data,
-        id: Date.now(),
-        fechaCreacion: new Date().toISOString().split('T')[0],
-        ultimoContacto: null
+  const handleGuardarContacto = async (data) => {
+    showLoading(modalContacto.modo === 'crear' ? 'Creando contacto...' : 'Guardando cambios...');
+    try {
+      const payload = {
+        nombre: data.nombre,
+        empresa: data.empresa || '',
+        telefono_principal: data.telefonoPrincipal || '',
+        telefono_movil: data.telefonoMovil || '',
+        telefono_trabajo: data.telefonoTrabajo || '',
+        email: data.email || '',
+        direccion: data.direccion || '',
+        notas: data.notas || '',
+        etiquetas: data.etiquetas || [],
       };
-      setContactos([nuevoContacto, ...contactos]);
-    } else {
-      setContactos(contactos.map(c => c.id === data.id ? data : c));
-      if (contactoDetalle?.id === data.id) {
-        setContactoDetalle(data);
+      if (modalContacto.modo === 'crear') {
+        const created = await contactService.create(payload);
+        const c = created?.contact || created;
+        setContactos([{
+          id: c.id,
+          nombre: c.nombre,
+          empresa: c.empresa || '',
+          telefonoPrincipal: c.telefono_principal || '',
+          telefonoMovil: c.telefono_movil || '',
+          telefonoTrabajo: c.telefono_trabajo || '',
+          email: c.email || '',
+          direccion: c.direccion || '',
+          notas: c.notas || '',
+          etiquetas: c.etiquetas || [],
+          fechaCreacion: c.created_at ? c.created_at.split('T')[0] : '',
+          ultimoContacto: c.ultimo_contacto || null,
+        }, ...contactos]);
+      } else {
+        const updated = await contactService.update(data.id, payload);
+        const c = updated?.contact || updated;
+        setContactos(contactos.map(x => x.id === data.id ? {
+          ...x,
+          nombre: c.nombre,
+          empresa: c.empresa || '',
+          telefonoPrincipal: c.telefono_principal || '',
+          telefonoMovil: c.telefono_movil || '',
+          telefonoTrabajo: c.telefono_trabajo || '',
+          email: c.email || '',
+          direccion: c.direccion || '',
+          notas: c.notas || '',
+          etiquetas: c.etiquetas || [],
+        } : x));
+        if (contactoDetalle?.id === data.id) {
+          setContactoDetalle({ ...contactoDetalle, ...c });
+        }
       }
+      setModalContacto({ open: false, modo: 'crear', data: null });
+    } catch (err) {
+      toast.error('Error guardando contacto: ' + (err?.response?.data?.error?.message || err.message));
+    } finally {
+      hideLoading();
     }
-    setModalContacto({ open: false, modo: 'crear', data: null });
   };
 
-  const handleEliminarContacto = (id) => {
-    if (confirm('¿Estás seguro de eliminar este contacto?')) {
+  const handleEliminarContacto = async (id) => {
+    if (!confirm('¿Estás seguro de eliminar este contacto?')) return;
+    showLoading('Eliminando...');
+    try {
+      await contactService.remove(id);
       setContactos(contactos.filter(c => c.id !== id));
       if (contactoDetalle?.id === id) {
         setContactoDetalle(null);
       }
+    } catch (err) {
+      toast.error('Error eliminando contacto: ' + (err?.response?.data?.error?.message || err.message));
+    } finally {
+      hideLoading();
     }
   };
 
   const handleLlamar = (telefono) => {
-    // Aquí se integraría con el Softphone
-    console.log('Llamando a:', telefono);
-    alert(`Iniciando llamada a ${telefono}\n(Integración con Softphone pendiente)`);
+    window.dispatchEvent(new CustomEvent('hablagt:softphone:call', { detail: { numero: telefono } }));
   };
 
   const getHistorialContacto = (contactoId) => {
@@ -204,35 +295,44 @@ const Contactos = () => {
   };
 
   // Handlers para categorías
-  const handleGuardarCategoria = (key, data) => {
-    setEtiquetasConfig(prev => ({
-      ...prev,
-      [key]: data
-    }));
-  };
-
-  const handleEliminarCategoria = (key) => {
-    // Remover la categoría de todos los contactos que la tengan
-    setContactos(contactos.map(c => ({
-      ...c,
-      etiquetas: c.etiquetas.filter(e => e !== key)
-    })));
-    // Eliminar la categoría
-    const newConfig = { ...etiquetasConfig };
-    delete newConfig[key];
-    setEtiquetasConfig(newConfig);
-    // Si estaba filtrado por esa categoría, volver a todos
-    if (filtroEtiqueta === key) {
-      setFiltroEtiqueta('todos');
+  const handleGuardarCategoria = async (key, data) => {
+    showLoading('Guardando etiqueta...');
+    try {
+      if (etiquetasConfig[key]) {
+        await contactTagService.update(key, data);
+      } else {
+        await contactTagService.create({ key, ...data });
+      }
+      setEtiquetasConfig(prev => ({ ...prev, [key]: data }));
+    } catch (err) {
+      toast.error('Error guardando etiqueta: ' + (err?.response?.data?.error?.message || err.message));
+    } finally {
+      hideLoading();
     }
   };
 
-  const handleAgregarCategoria = (data) => {
+  const handleEliminarCategoria = async (key) => {
+    showLoading('Eliminando etiqueta...');
+    try {
+      await contactTagService.remove(key);
+      setContactos(contactos.map(c => ({
+        ...c,
+        etiquetas: (c.etiquetas || []).filter(e => e !== key)
+      })));
+      setEtiquetasConfig(prev => {
+        const { [key]: _, ...rest } = prev;
+        return rest;
+      });
+    } catch (err) {
+      toast.error('Error eliminando etiqueta: ' + (err?.response?.data?.error?.message || err.message));
+    } finally {
+      hideLoading();
+    }
+  };
+
+  const handleAgregarCategoria = async (data) => {
     const key = data.label.toLowerCase().replace(/\s+/g, '_');
-    setEtiquetasConfig(prev => ({
-      ...prev,
-      [key]: data
-    }));
+    await handleGuardarCategoria(key, data);
   };
 
   return (

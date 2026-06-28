@@ -9,6 +9,7 @@ import {
 } from 'react-icons/hi';
 import { FiHeadphones, FiUser } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
+import { authService } from '../../services/authService';
 import Loading from '../Loading';
 import './Login.css';
 
@@ -23,7 +24,78 @@ const Login = () => {
   const [error, setError] = useState('');
   const [focusedInput, setFocusedInput] = useState(null);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, pendingChallenge, verify2FA, cancel2FA } = useAuth();
+  const [twoFACode, setTwoFACode] = useState('');
+
+  // Password recovery flow: 'login' (default) | 'forgot' | 'reset'.
+  const [view, setView] = useState('login');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [resetToken, setResetToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [info, setInfo] = useState('');
+
+  const goToLogin = () => {
+    setView('login');
+    setError('');
+    setInfo('');
+    setForgotEmail('');
+    setResetToken('');
+    setNewPassword('');
+    setConfirmPassword('');
+  };
+
+  const handleForgotSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    setInfo('');
+    try {
+      const data = await authService.forgotPassword(forgotEmail.trim());
+      // In dev the backend returns the plaintext token so the SPA can
+      // continue without an email server; in production it returns 204
+      // and the token is delivered by email.
+      if (data && data.token) {
+        setResetToken(data.token);
+        setInfo('Generamos un enlace de recuperación. Ingresa tu nueva contraseña.');
+        setView('reset');
+      } else {
+        setInfo('Si el correo está registrado, recibirás instrucciones para restablecer tu contraseña.');
+      }
+    } catch {
+      // Never reveal whether the email exists.
+      setInfo('Si el correo está registrado, recibirás instrucciones para restablecer tu contraseña.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setInfo('');
+    if (newPassword.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('Las contraseñas no coinciden');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      await authService.resetPassword(resetToken.trim(), newPassword);
+      setView('login');
+      setInfo('Tu contraseña fue actualizada. Inicia sesión con tu nueva contraseña.');
+      setNewPassword('');
+      setConfirmPassword('');
+      setResetToken('');
+    } catch (err) {
+      setError(err?.response?.data?.error?.message || 'No se pudo restablecer la contraseña. El enlace puede haber expirado.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -39,28 +111,211 @@ const Login = () => {
     setIsLoading(true);
     setError('');
 
-    // Simular validación
-    setTimeout(() => {
-      const result = login(formData.usuario, formData.password);
+    const result = await login(formData.usuario, formData.password);
 
-      if (result.success) {
+    if (result.success) {
+      if (result.requires2FA) {
         setIsLoading(false);
-        setIsAuthenticating(true);
-
-        // Mostrar loading y navegar
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 2000);
-      } else {
-        setIsLoading(false);
-        setError('Usuario o contraseña incorrectos');
+        return;
       }
-    }, 1000);
+      setIsAuthenticating(true);
+      setTimeout(() => navigate('/dashboard'), 600);
+    } else {
+      setIsLoading(false);
+      setError(result.error || 'Usuario o contraseña incorrectos');
+    }
+  };
+
+  const handle2FASubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    const result = await verify2FA(twoFACode);
+    if (result.success) {
+      setIsAuthenticating(true);
+      setTimeout(() => navigate('/dashboard'), 600);
+    } else {
+      setIsLoading(false);
+      setError(result.error || 'Código inválido');
+    }
   };
 
   // Mostrar loading de autenticación
   if (isAuthenticating) {
     return <Loading mensaje="Autenticando..." />;
+  }
+
+  if (pendingChallenge) {
+    return (
+      <div className="login-wrapper">
+        <motion.div
+          className="login-form-panel"
+          initial={{ x: 50, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          style={{ width: '100%' }}
+        >
+          <div className="form-container">
+            <motion.div
+              className="form-header"
+              initial={{ y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+            >
+              <h1>Verificación en 2 pasos</h1>
+              <p>Ingresa el código de 6 dígitos de tu app autenticadora</p>
+            </motion.div>
+            <motion.form
+              className="login-form"
+              onSubmit={handle2FASubmit}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              autoComplete="off"
+            >
+              {error && (
+                <motion.div className="error-message" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  {error}
+                </motion.div>
+              )}
+              <div className={`form-group ${twoFACode ? 'has-value' : ''}`}>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  value={twoFACode}
+                  onChange={(e) => setTwoFACode(e.target.value.replace(/\D/g, ''))}
+                  placeholder="000000"
+                  style={{ textAlign: 'center', letterSpacing: '0.5em', fontSize: '1.5rem' }}
+                  required
+                  autoFocus
+                />
+              </div>
+              <motion.button
+                type="submit"
+                className={`submit-btn ${isLoading ? 'loading' : ''}`}
+                disabled={isLoading || twoFACode.length !== 6}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                {isLoading ? <div className="loader-spinner"></div> : <span>Verificar</span>}
+              </motion.button>
+              <button
+                type="button"
+                onClick={() => { cancel2FA(); setTwoFACode(''); }}
+                style={{ background: 'transparent', border: 'none', color: '#888', marginTop: '1rem', cursor: 'pointer' }}
+              >
+                Cancelar
+              </button>
+            </motion.form>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (view === 'forgot' || view === 'reset') {
+    return (
+      <div className="login-wrapper">
+        <motion.div
+          className="login-form-panel"
+          initial={{ x: 50, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          style={{ width: '100%' }}
+        >
+          <div className="form-container">
+            <motion.div className="form-header" initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+              <h1>{view === 'forgot' ? 'Recuperar contraseña' : 'Nueva contraseña'}</h1>
+              <p>
+                {view === 'forgot'
+                  ? 'Ingresa tu correo y te enviaremos instrucciones'
+                  : 'Ingresa el código y tu nueva contraseña'}
+              </p>
+            </motion.div>
+
+            {view === 'forgot' ? (
+              <motion.form className="login-form" onSubmit={handleForgotSubmit} initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} autoComplete="off">
+                {error && <div className="error-message">{error}</div>}
+                {info && <div className="error-message" style={{ background: 'rgba(16,185,129,0.12)', color: '#059669', borderColor: 'rgba(16,185,129,0.3)' }}>{info}</div>}
+                <div className={`form-group ${forgotEmail ? 'has-value' : ''}`}>
+                  <div className="input-wrapper">
+                    <HiOutlineMail className="input-icon" />
+                    <input
+                      type="email"
+                      name="forgotEmail"
+                      placeholder="Correo electrónico"
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      required
+                      autoFocus
+                    />
+                  </div>
+                </div>
+                <motion.button type="submit" className={`submit-btn ${isLoading ? 'loading' : ''}`} disabled={isLoading || !forgotEmail} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                  {isLoading ? <div className="loader-spinner"></div> : <span>Enviar instrucciones</span>}
+                </motion.button>
+                <button type="button" onClick={goToLogin} style={{ background: 'transparent', border: 'none', color: '#888', marginTop: '1rem', cursor: 'pointer' }}>
+                  Volver al inicio de sesión
+                </button>
+              </motion.form>
+            ) : (
+              <motion.form className="login-form" onSubmit={handleResetSubmit} initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} autoComplete="off">
+                {error && <div className="error-message">{error}</div>}
+                {info && <div className="error-message" style={{ background: 'rgba(16,185,129,0.12)', color: '#059669', borderColor: 'rgba(16,185,129,0.3)' }}>{info}</div>}
+                <div className={`form-group ${resetToken ? 'has-value' : ''}`}>
+                  <div className="input-wrapper">
+                    <HiOutlineLockClosed className="input-icon" />
+                    <input
+                      type="text"
+                      name="resetToken"
+                      placeholder="Código de recuperación"
+                      value={resetToken}
+                      onChange={(e) => setResetToken(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className={`form-group ${newPassword ? 'has-value' : ''}`}>
+                  <div className="input-wrapper">
+                    <HiOutlineLockClosed className="input-icon" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="newPassword"
+                      placeholder="Nueva contraseña"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                    />
+                    <button type="button" className="toggle-password" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}>
+                      {showPassword ? <HiOutlineEyeOff /> : <HiOutlineEye />}
+                    </button>
+                  </div>
+                </div>
+                <div className={`form-group ${confirmPassword ? 'has-value' : ''}`}>
+                  <div className="input-wrapper">
+                    <HiOutlineLockClosed className="input-icon" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="confirmPassword"
+                      placeholder="Confirmar contraseña"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+                <motion.button type="submit" className={`submit-btn ${isLoading ? 'loading' : ''}`} disabled={isLoading} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                  {isLoading ? <div className="loader-spinner"></div> : <span>Restablecer contraseña</span>}
+                </motion.button>
+                <button type="button" onClick={goToLogin} style={{ background: 'transparent', border: 'none', color: '#888', marginTop: '1rem', cursor: 'pointer' }}>
+                  Volver al inicio de sesión
+                </button>
+              </motion.form>
+            )}
+          </div>
+        </motion.div>
+      </div>
+    );
   }
 
   return (
@@ -183,6 +438,18 @@ const Login = () => {
             transition={{ delay: 0.4 }}
             autoComplete="off"
           >
+            {/* Success / info message (e.g. after a password reset) */}
+            {info && (
+              <motion.div
+                className="error-message"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                style={{ background: 'rgba(16,185,129,0.12)', color: '#059669', borderColor: 'rgba(16,185,129,0.3)' }}
+              >
+                {info}
+              </motion.div>
+            )}
+
             {/* Error Message */}
             {error && (
               <motion.div
@@ -247,7 +514,14 @@ const Login = () => {
                 <span className="checkmark"></span>
                 <span className="checkbox-label">Recordarme</span>
               </label>
-              <a href="#" className="forgot-link">¿Olvidaste tu contraseña?</a>
+              <button
+                type="button"
+                className="forgot-link"
+                onClick={() => { setView('forgot'); setError(''); setInfo(''); }}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
             </div>
 
             {/* Submit Button */}

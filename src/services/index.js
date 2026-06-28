@@ -1,0 +1,11 @@
+export { authService } from "./authService";
+export { tenantService, notificationService } from "./tenantService";
+export { contactService, contactTagService } from "./contactService";
+export { eventService, eventTypeService } from "./eventService";
+export { extensionService } from "./extensionService";
+export { cdrService } from "./cdrService";
+export { dashboardService } from "./dashboardService";
+export { agentSelfService, agentAdminService } from "./agentService";
+export { softphoneService } from "./softphoneService";
+export { realtimeService } from "./realtimeService";
+export { integrationService } from "./integrationService";

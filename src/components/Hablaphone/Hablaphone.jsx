@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react';
+import { cdrService, agentSelfService } from '../../services';
+import { useLoading } from '../../context/LoadingContext';
+import { useToast } from '../../context/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiPhone,
@@ -86,12 +89,92 @@ const Hablaphone = () => {
   const [tiempoLlamada, setTiempoLlamada] = useState(0);
 
   // Historial
-  const [historial, setHistorial] = useState(historialData);
+  const [historial, setHistorial] = useState([]);
   const [filtroHistorial, setFiltroHistorial] = useState('todos');
   const [busquedaHistorial, setBusquedaHistorial] = useState('');
 
   // Estadísticas
   const [periodoStats, setPeriodoStats] = useState('hoy');
+
+  const [sipInfo, setSipInfo] = useState({ extension: '', servidor: '', estado: 'desconectado' });
+  const [presence, setPresence] = useState({ estado: 'disponible' });
+  const { showLoading, hideLoading } = useLoading();
+  const toast = useToast();
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [hist, sip, pres] = await Promise.all([
+          cdrService.list({ page_size: 50, page: 1 }),
+          agentSelfService.getSIP().catch(() => ({})),
+          agentSelfService.getMyPresence().catch(() => ({})),
+        ]);
+        const items = hist?.items || hist || [];
+        setHistorial(
+          items.map((c) => ({
+            id: c.id,
+            numero: c.origen || c.destino || '',
+            contacto: c.contacto_nombre || c.agente_nombre || c.origen || c.destino,
+            tipo: c.tipo,
+            duracion: c.duracion_seg || 0,
+            fecha: c.occurred_at,
+            estado: c.estado,
+          }))
+        );
+        setSipInfo({
+          extension: sip?.extension || '',
+          servidor: sip?.servidor || sip?.server || '',
+          estado: sip?.estado || 'desconectado',
+        });
+        setPresence({ estado: pres?.estado || 'disponible', sip_connected: pres?.sip_connected });
+      } catch (err) {
+        console.error('hablaphone load error', err);
+      }
+    };
+    load();
+  }, []);
+
+  const handleSipReconnect = async () => {
+    showLoading('Reconectando SIP...');
+    try {
+      const res = await agentSelfService.sipReconnect();
+      setSipInfo((prev) => ({ ...prev, estado: 'reconectando' }));
+      setTimeout(async () => {
+        try {
+          const sip = await agentSelfService.getSIP();
+          setSipInfo({
+            extension: sip?.extension || prev.extension,
+            servidor: sip?.servidor || sip?.server || prev.servidor,
+            estado: sip?.estado || 'conectado',
+          });
+        } finally {
+          hideLoading();
+        }
+      }, 1500);
+    } catch (err) {
+      hideLoading();
+      toast.error('Error al reconectar: ' + (err?.response?.data?.error?.message || err.message));
+    }
+  };
+
+  const handleCambiarEstado = async (nuevoEstado) => {
+    setEstadoAgente(nuevoEstado);
+    setShowEstados(false);
+    try {
+      await agentSelfService.setMyPresence(nuevoEstado);
+    } catch (err) {
+      console.error('presence error', err);
+    }
+  };
+
+  const handleLlamar = async () => {
+    if (numeroMarcado.length === 0) return;
+    setEnLlamada(true);
+    setLlamadaActiva({ numero: numeroMarcado, contacto: 'Marcando...', tipo: 'saliente' });
+    setTiempoLlamada(0);
+    setEstadoAgente('en_llamada');
+    window.dispatchEvent(new CustomEvent('hablagt:softphone:call', { detail: { numero: numeroMarcado } }));
+  };
 
   // Configuración
   const [configAudio, setConfigAudio] = useState({
@@ -130,19 +213,6 @@ const Hablaphone = () => {
     setNumeroMarcado(prev => prev.slice(0, -1));
   };
 
-  const handleLlamar = () => {
-    if (numeroMarcado.length > 0) {
-      setEnLlamada(true);
-      setLlamadaActiva({
-        numero: numeroMarcado,
-        contacto: 'Marcando...',
-        tipo: 'saliente'
-      });
-      setTiempoLlamada(0);
-      setEstadoAgente('en_llamada');
-    }
-  };
-
   const handleColgar = () => {
     setEnLlamada(false);
     setLlamadaActiva(null);
@@ -155,8 +225,8 @@ const Hablaphone = () => {
   // Filtrar historial
   const historialFiltrado = historial.filter(llamada => {
     const matchTipo = filtroHistorial === 'todos' || llamada.tipo === filtroHistorial;
-    const matchBusqueda = llamada.contacto.toLowerCase().includes(busquedaHistorial.toLowerCase()) ||
-                          llamada.numero.includes(busquedaHistorial);
+    const matchBusqueda = (llamada.contacto || '').toLowerCase().includes(busquedaHistorial.toLowerCase()) ||
+                          (llamada.numero || '').includes(busquedaHistorial);
     return matchTipo && matchBusqueda;
   });
 
@@ -209,10 +279,7 @@ const Hablaphone = () => {
                     <button
                       key={estado.id}
                       className={`estado-option ${estadoAgente === estado.id ? 'active' : ''}`}
-                      onClick={() => {
-                        setEstadoAgente(estado.id);
-                        setShowEstados(false);
-                      }}
+                      onClick={() => handleCambiarEstado(estado.id)}
                     >
                       <span className="estado-dot" style={{ background: estado.color }}></span>
                       <Icon style={{ color: estado.color }} />
@@ -717,22 +784,22 @@ const Hablaphone = () => {
                     Cuenta SIP / FreePBX
                   </h3>
 
-                  <div className="sip-status conectado">
+                  <div className={`sip-status ${sipInfo.estado === 'conectado' ? 'conectado' : 'desconectado'}`}>
                     <div className="status-indicator"></div>
-                    <span>Conectado a FreePBX</span>
+                    <span>{sipInfo.estado === 'conectado' ? 'Conectado a FreePBX' : 'Desconectado'}</span>
                   </div>
 
                   <div className="config-group">
                     <label>Extensión</label>
-                    <input type="text" value="1001" disabled />
+                    <input type="text" value={sipInfo.extension || '—'} disabled />
                   </div>
 
                   <div className="config-group">
                     <label>Servidor</label>
-                    <input type="text" value="pbx.hablagt.com" disabled />
+                    <input type="text" value={sipInfo.servidor || '—'} disabled />
                   </div>
 
-                  <button className="btn-secondary">
+                  <button className="btn-secondary" onClick={handleSipReconnect}>
                     <FiRefreshCw />
                     Reconectar
                   </button>

@@ -45,12 +45,13 @@ const Sidebar = () => {
     }
   };
 
-  const handleLogout = () => {
-    showLoadingFor(2000, 'Cerrando sesión...');
-    setTimeout(() => {
-      logout();
+  const handleLogout = async () => {
+    showLoadingFor(800, 'Cerrando sesión...');
+    try {
+      await logout();
+    } finally {
       navigate('/login');
-    }, 100);
+    }
   };
 
   return (
