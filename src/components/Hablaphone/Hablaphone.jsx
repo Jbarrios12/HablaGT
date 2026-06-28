@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { cdrService, agentSelfService } from '../../services';
 import { useLoading } from '../../context/LoadingContext';
 import { useToast } from '../../context/ToastContext';
@@ -45,36 +45,14 @@ const estadosAgente = [
   { id: 'no_disponible', label: 'No Disponible', color: '#ef4444', icon: FiX }
 ];
 
-// Datos de ejemplo - Historial de llamadas
-const historialData = [
-  { id: 1, tipo: 'saliente', numero: '+502 5555-1234', contacto: 'Carlos Mendoza', duracion: '5:23', fecha: '2024-01-15', hora: '09:15', estado: 'completada', grabacion: true },
-  { id: 2, tipo: 'entrante', numero: '+502 5555-6789', contacto: 'María López', duracion: '12:45', fecha: '2024-01-15', hora: '10:30', estado: 'completada', grabacion: true },
-  { id: 3, tipo: 'perdida', numero: '+502 5555-2345', contacto: 'Desconocido', duracion: '-', fecha: '2024-01-15', hora: '11:00', estado: 'perdida', grabacion: false },
-  { id: 4, tipo: 'saliente', numero: '+502 5555-3456', contacto: 'Roberto Juárez', duracion: '3:12', fecha: '2024-01-15', hora: '11:45', estado: 'completada', grabacion: true },
-  { id: 5, tipo: 'entrante', numero: '+502 5555-4567', contacto: 'Ana Martínez', duracion: '8:30', fecha: '2024-01-15', hora: '14:20', estado: 'completada', grabacion: false },
-  { id: 6, tipo: 'saliente', numero: '+502 5555-5678', contacto: 'Pedro García', duracion: '2:15', fecha: '2024-01-14', hora: '16:00', estado: 'completada', grabacion: true },
-  { id: 7, tipo: 'perdida', numero: '+502 5555-6789', contacto: 'Sandra López', duracion: '-', fecha: '2024-01-14', hora: '09:30', estado: 'perdida', grabacion: false },
-  { id: 8, tipo: 'entrante', numero: '+502 5555-7890', contacto: 'Luis Hernández', duracion: '15:45', fecha: '2024-01-14', hora: '10:15', estado: 'completada', grabacion: true },
-];
-
-// Estadísticas de ejemplo
-const estadisticasData = {
-  hoy: {
-    llamadasRealizadas: 24,
-    llamadasRecibidas: 18,
-    llamadasPerdidas: 3,
-    tiempoTotal: '2h 45m',
-    tiempoPromedio: '4:30',
-    tasaRespuesta: 85
-  },
-  semana: {
-    llamadasRealizadas: 156,
-    llamadasRecibidas: 132,
-    llamadasPerdidas: 12,
-    tiempoTotal: '18h 30m',
-    tiempoPromedio: '5:15',
-    tasaRespuesta: 91
-  }
+// Valores por defecto mientras cargan las estadísticas reales (CDR).
+const ESTADISTICAS_VACIAS = {
+  llamadasRealizadas: 0,
+  llamadasRecibidas: 0,
+  llamadasPerdidas: 0,
+  tiempoTotal: '0h 0m',
+  tiempoPromedio: '0:00',
+  tasaRespuesta: 0,
 };
 
 const Hablaphone = () => {
@@ -93,8 +71,10 @@ const Hablaphone = () => {
   const [filtroHistorial, setFiltroHistorial] = useState('todos');
   const [busquedaHistorial, setBusquedaHistorial] = useState('');
 
-  // Estadísticas
+  // Estadísticas (CDR reales)
   const [periodoStats, setPeriodoStats] = useState('hoy');
+  const [estadisticas, setEstadisticas] = useState(ESTADISTICAS_VACIAS);
+  const [cargandoStats, setCargandoStats] = useState(false);
 
   const [sipInfo, setSipInfo] = useState({ extension: '', servidor: '', estado: 'desconectado' });
   const [presence, setPresence] = useState({ estado: 'disponible' });
@@ -134,19 +114,62 @@ const Hablaphone = () => {
     load();
   }, []);
 
+  // Estadísticas reales (CDR) para el período seleccionado. El backend filtra
+  // por occurred_at >= fecha_inicio AND < fecha_fin (acepta YYYY-MM-DD).
+  const loadStats = useCallback(async () => {
+    setCargandoStats(true);
+    try {
+      const toYMD = (d) => d.toISOString().slice(0, 10);
+      const hoy = new Date();
+      const inicio = new Date(hoy);
+      if (periodoStats === 'semana') inicio.setDate(inicio.getDate() - 6);
+      const fin = new Date(hoy);
+      fin.setDate(fin.getDate() + 1);
+      const st = await cdrService.stats({ fecha_inicio: toYMD(inicio), fecha_fin: toYMD(fin) });
+      const porTipo = st?.por_tipo || {};
+      const porEstado = st?.por_estado || {};
+      const total = st?.total || 0;
+      const avg = st?.duracion_promedio_seg || 0;
+      const completadas = porEstado.completada || 0;
+      const totalSeg = Math.round(avg * completadas); // sin SUM en el backend: avg × completadas
+      const horas = Math.floor(totalSeg / 3600);
+      const mins = Math.floor((totalSeg % 3600) / 60);
+      const promMin = Math.floor(avg / 60);
+      const promSec = Math.round(avg % 60);
+      setEstadisticas({
+        llamadasRealizadas: porTipo.outbound || 0,
+        llamadasRecibidas: porTipo.inbound || 0,
+        llamadasPerdidas: porEstado.perdida || 0,
+        tiempoTotal: `${horas}h ${mins}m`,
+        tiempoPromedio: `${promMin}:${String(promSec).padStart(2, '0')}`,
+        tasaRespuesta: total > 0 ? Math.round((completadas / total) * 100) : 0,
+      });
+    } catch (err) {
+      console.error('stats load error', err);
+      setEstadisticas(ESTADISTICAS_VACIAS);
+    } finally {
+      setCargandoStats(false);
+    }
+  }, [periodoStats]);
+
+  // Cargar al abrir la pestaña o cambiar de período.
+  useEffect(() => {
+    if (tabActivo === 'estadisticas') loadStats();
+  }, [tabActivo, loadStats]);
+
   const handleSipReconnect = async () => {
     showLoading('Reconectando SIP...');
     try {
-      const res = await agentSelfService.sipReconnect();
+      await agentSelfService.sipReconnect();
       setSipInfo((prev) => ({ ...prev, estado: 'reconectando' }));
       setTimeout(async () => {
         try {
           const sip = await agentSelfService.getSIP();
-          setSipInfo({
+          setSipInfo((prev) => ({
             extension: sip?.extension || prev.extension,
             servidor: sip?.servidor || sip?.server || prev.servidor,
             estado: sip?.estado || 'conectado',
-          });
+          }));
         } finally {
           hideLoading();
         }
@@ -567,8 +590,8 @@ const Hablaphone = () => {
                     Esta Semana
                   </button>
                 </div>
-                <button className="btn-refresh">
-                  <FiRefreshCw />
+                <button className="btn-refresh" onClick={loadStats} disabled={cargandoStats}>
+                  <FiRefreshCw className={cargandoStats ? 'spin' : ''} />
                   Actualizar
                 </button>
               </div>
@@ -579,7 +602,7 @@ const Hablaphone = () => {
                     <FiPhoneOutgoing />
                   </div>
                   <div className="stat-info">
-                    <span className="stat-valor">{estadisticasData[periodoStats].llamadasRealizadas}</span>
+                    <span className="stat-valor">{estadisticas.llamadasRealizadas}</span>
                     <span className="stat-label">Llamadas Realizadas</span>
                   </div>
                 </div>
@@ -589,7 +612,7 @@ const Hablaphone = () => {
                     <FiPhoneIncoming />
                   </div>
                   <div className="stat-info">
-                    <span className="stat-valor">{estadisticasData[periodoStats].llamadasRecibidas}</span>
+                    <span className="stat-valor">{estadisticas.llamadasRecibidas}</span>
                     <span className="stat-label">Llamadas Recibidas</span>
                   </div>
                 </div>
@@ -599,7 +622,7 @@ const Hablaphone = () => {
                     <FiPhoneMissed />
                   </div>
                   <div className="stat-info">
-                    <span className="stat-valor">{estadisticasData[periodoStats].llamadasPerdidas}</span>
+                    <span className="stat-valor">{estadisticas.llamadasPerdidas}</span>
                     <span className="stat-label">Llamadas Perdidas</span>
                   </div>
                 </div>
@@ -609,7 +632,7 @@ const Hablaphone = () => {
                     <FiClock />
                   </div>
                   <div className="stat-info">
-                    <span className="stat-valor">{estadisticasData[periodoStats].tiempoTotal}</span>
+                    <span className="stat-valor">{estadisticas.tiempoTotal}</span>
                     <span className="stat-label">Tiempo Total</span>
                   </div>
                 </div>
@@ -619,7 +642,7 @@ const Hablaphone = () => {
                     <FiActivity />
                   </div>
                   <div className="stat-info">
-                    <span className="stat-valor">{estadisticasData[periodoStats].tiempoPromedio}</span>
+                    <span className="stat-valor">{estadisticas.tiempoPromedio}</span>
                     <span className="stat-label">Duración Promedio</span>
                   </div>
                 </div>
@@ -629,7 +652,7 @@ const Hablaphone = () => {
                     <FiTrendingUp />
                   </div>
                   <div className="stat-info">
-                    <span className="stat-valor">{estadisticasData[periodoStats].tasaRespuesta}%</span>
+                    <span className="stat-valor">{estadisticas.tasaRespuesta}%</span>
                     <span className="stat-label">Tasa de Respuesta</span>
                   </div>
                 </div>
