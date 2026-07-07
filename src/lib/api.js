@@ -14,8 +14,9 @@ api.interceptors.request.use((config) => {
   if (access) {
     config.headers.Authorization = `Bearer ${access}`;
   }
-  if (tenantSlug) {
-    config.headers["X-Tenant-Slug"] = tenantSlug;
+  const effectiveTenantSlug = tokenStorage.getTenantOverride() || tenantSlug;
+  if (effectiveTenantSlug) {
+    config.headers["X-Tenant-Slug"] = effectiveTenantSlug;
   }
   return config;
 });

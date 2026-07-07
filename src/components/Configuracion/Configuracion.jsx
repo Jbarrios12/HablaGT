@@ -367,8 +367,8 @@ const Configuracion = () => {
         ))}
       </div>
 
-      {/* Barra de acciones */}
-      {tabActiva !== 'general' && (
+      {/* Barra de acciones — solo aplica a las pestañas con listado (extensiones/agentes) */}
+      {(tabActiva === 'extensiones' || tabActiva === 'agentes') && (
         <div className="config-actions">
           <div className="search-box">
             <FiSearch />

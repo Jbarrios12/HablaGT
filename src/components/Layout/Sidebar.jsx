@@ -27,7 +27,7 @@ const menuItems = [
   { path: '/configuracion', icon: FiSettings, label: 'Configuración' },
 ];
 
-const Sidebar = () => {
+const Sidebar = ({ mobileOpen = false, onNavigate }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -35,6 +35,7 @@ const Sidebar = () => {
   const { logout } = useAuth();
 
   const handleNavClick = (e, path) => {
+    onNavigate?.();
     // Solo mostrar loading si es una ruta diferente
     if (location.pathname !== path) {
       e.preventDefault();
@@ -46,6 +47,7 @@ const Sidebar = () => {
   };
 
   const handleLogout = async () => {
+    onNavigate?.();
     showLoadingFor(800, 'Cerrando sesión...');
     try {
       await logout();
@@ -56,7 +58,7 @@ const Sidebar = () => {
 
   return (
     <motion.aside
-      className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}
+      className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}
       initial={false}
       animate={{ width: isCollapsed ? 80 : 260 }}
       transition={{ duration: 0.3, ease: 'easeInOut' }}

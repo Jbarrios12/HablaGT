@@ -7,13 +7,14 @@ import {
   FiChevronDown,
   FiSettings,
   FiLogOut,
-  FiPhone
+  FiPhone,
+  FiMenu
 } from 'react-icons/fi';
 import { notificationService } from '../../services';
 import { useAuth } from '../../context/AuthContext';
 import './Header.css';
 
-const Header = ({ title }) => {
+const Header = ({ title, onMenuClick }) => {
   const { user, logout } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -88,6 +89,9 @@ const Header = ({ title }) => {
   return (
     <header className="header">
       <div className="header-left">
+        <button className="icon-btn menu-toggle" onClick={onMenuClick} aria-label="Abrir menú">
+          <FiMenu />
+        </button>
         <h1 className="page-title">{title}</h1>
       </div>
 

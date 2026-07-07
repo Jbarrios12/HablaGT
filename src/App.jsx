@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect } from 'react';
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoadingProvider } from './context/LoadingContext';
@@ -15,6 +15,7 @@ const Configuracion = lazy(() => import('./components/Configuracion'));
 const Contactos = lazy(() => import('./components/Contactos'));
 const Agendas = lazy(() => import('./components/Agendas'));
 const Hablaphone = lazy(() => import('./components/Hablaphone'));
+const ImpersonateEntry = lazy(() => import('./components/Impersonate/ImpersonateEntry'));
 
 // Componente temporal para páginas en desarrollo
 const PlaceholderPage = ({ title }) => (
@@ -63,20 +64,6 @@ const PublicRoute = ({ children }) => {
 
 // Componente principal de rutas
 const AppRoutes = () => {
-  const [initialLoading, setInitialLoading] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setInitialLoading(false);
-    }, 2500);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (initialLoading) {
-    return <Loading mensaje="Iniciando HablaGT..." />;
-  }
-
   return (
     <LoadingProvider>
       <Suspense fallback={<Loading mensaje="Cargando..." />}>
@@ -90,6 +77,9 @@ const AppRoutes = () => {
               </PublicRoute>
             }
           />
+
+          {/* Entrada de sesión de soporte (impersonación desde el backoffice) */}
+          <Route path="/impersonate" element={<ImpersonateEntry />} />
 
           {/* Rutas protegidas con Layout */}
           <Route
