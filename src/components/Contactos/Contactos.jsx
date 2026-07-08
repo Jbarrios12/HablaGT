@@ -21,7 +21,11 @@ import {
   FiPhoneCall,
   FiPhoneIncoming,
   FiPhoneOutgoing,
-  FiSettings
+  FiSettings,
+  FiGrid,
+  FiList,
+  FiChevronLeft,
+  FiChevronRight
 } from 'react-icons/fi';
 import { contactService, contactTagService } from '../../services';
 import { useLoading } from '../../context/LoadingContext';
@@ -146,6 +150,9 @@ const Contactos = () => {
   const [filtroEtiqueta, setFiltroEtiqueta] = useState('todos');
   const [modalContacto, setModalContacto] = useState({ open: false, modo: 'crear', data: null });
   const [contactoDetalle, setContactoDetalle] = useState(null);
+  const [vista, setVista] = useState('cards');
+  const [paginaActual, setPaginaActual] = useState(1);
+  const CONTACTOS_POR_PAGINA = 12;
 
   // Estado para categorías/etiquetas
   const [etiquetasConfig, setEtiquetasConfig] = useState({});
@@ -204,6 +211,16 @@ const Contactos = () => {
 
     return matchBusqueda && matchEtiqueta;
   });
+
+  const totalPaginas = Math.max(1, Math.ceil(contactosFiltrados.length / CONTACTOS_POR_PAGINA));
+  const contactosPaginados = contactosFiltrados.slice(
+    (paginaActual - 1) * CONTACTOS_POR_PAGINA,
+    paginaActual * CONTACTOS_POR_PAGINA
+  );
+
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [busqueda, filtroEtiqueta]);
 
   // Contar por etiqueta
   const contarPorEtiqueta = (etiqueta) => {
@@ -347,11 +364,11 @@ const Contactos = () => {
           </div>
         </div>
         <div className="contactos-actions-header">
-          <button className="btn-secondary">
+          <button className="btn-secondary" title="Importar">
             <FiUpload />
             <span>Importar</span>
           </button>
-          <button className="btn-secondary">
+          <button className="btn-secondary" title="Exportar">
             <FiDownload />
             <span>Exportar</span>
           </button>
@@ -392,9 +409,10 @@ const Contactos = () => {
                 <li
                   key={key}
                   className={filtroEtiqueta === key ? 'active' : ''}
+                  style={{ '--tag-color': config.color }}
                   onClick={() => setFiltroEtiqueta(key)}
                 >
-                  <FiTag style={{ color: config.color }} />
+                  <span className="etiqueta-dot" style={{ background: config.color }} />
                   <span>{config.label}</span>
                   <span className="count">{contarPorEtiqueta(key)}</span>
                 </li>
@@ -424,12 +442,29 @@ const Contactos = () => {
             <span className="results-count">
               {contactosFiltrados.length} contacto{contactosFiltrados.length !== 1 ? 's' : ''}
             </span>
+            <div className="vista-toggle">
+              <button
+                className={vista === 'cards' ? 'active' : ''}
+                onClick={() => setVista('cards')}
+                title="Vista de tarjetas"
+              >
+                <FiGrid />
+              </button>
+              <button
+                className={vista === 'list' ? 'active' : ''}
+                onClick={() => setVista('list')}
+                title="Vista de lista"
+              >
+                <FiList />
+              </button>
+            </div>
           </div>
 
           {/* Grid de contactos */}
+          {vista === 'cards' && (
           <div className="contactos-grid">
             <AnimatePresence>
-              {contactosFiltrados.map((contacto) => (
+              {contactosPaginados.map((contacto) => (
                 <motion.div
                   key={contacto.id}
                   className={`contacto-card ${contactoDetalle?.id === contacto.id ? 'selected' : ''}`}
@@ -486,12 +521,98 @@ const Contactos = () => {
               </div>
             )}
           </div>
+          )}
+
+          {/* Lista de contactos */}
+          {vista === 'list' && (
+          <div className="contactos-list">
+            <AnimatePresence>
+              {contactosPaginados.map((contacto) => (
+                <motion.div
+                  key={contacto.id}
+                  className={`contacto-row ${contactoDetalle?.id === contacto.id ? 'selected' : ''}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  layout
+                  onClick={() => setContactoDetalle(contacto)}
+                >
+                  <div className="contacto-row-avatar">
+                    {contacto.nombre.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </div>
+                  <div className="contacto-row-info">
+                    <span className="contacto-row-nombre">{contacto.nombre}</span>
+                    {contacto.empresa && <span className="contacto-row-empresa">{contacto.empresa}</span>}
+                  </div>
+                  <div className="contacto-row-telefono">
+                    <FiPhone />
+                    {contacto.telefonoPrincipal}
+                  </div>
+                  <div className="contacto-row-etiquetas">
+                    {contacto.etiquetas.map(etiq => (
+                      <span
+                        key={etiq}
+                        className="etiqueta-badge"
+                        style={{ background: `${etiquetasConfig[etiq]?.color}20`, color: etiquetasConfig[etiq]?.color }}
+                      >
+                        {etiquetasConfig[etiq]?.label}
+                      </span>
+                    ))}
+                  </div>
+                  <button
+                    className="btn-call btn-call-sm"
+                    onClick={(e) => { e.stopPropagation(); handleLlamar(contacto.telefonoPrincipal); }}
+                    title="Llamar"
+                  >
+                    <FiPhoneCall />
+                  </button>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+
+            {contactosFiltrados.length === 0 && (
+              <div className="empty-state">
+                <FiUsers />
+                <p>No se encontraron contactos</p>
+              </div>
+            )}
+          </div>
+          )}
+
+          {/* Paginación */}
+          {contactosFiltrados.length > 0 && totalPaginas > 1 && (
+            <div className="paginacion">
+              <button
+                className="pag-btn"
+                disabled={paginaActual === 1}
+                onClick={() => setPaginaActual((p) => p - 1)}
+              >
+                <FiChevronLeft />
+              </button>
+              <span className="pag-info">Página {paginaActual} de {totalPaginas}</span>
+              <button
+                className="pag-btn"
+                disabled={paginaActual === totalPaginas}
+                onClick={() => setPaginaActual((p) => p + 1)}
+              >
+                <FiChevronRight />
+              </button>
+            </div>
+          )}
         </main>
 
         {/* Panel de detalle */}
         <AnimatePresence>
           {contactoDetalle && (
-            <motion.aside
+            <>
+              <motion.div
+                className="contacto-detalle-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setContactoDetalle(null)}
+              />
+              <motion.aside
               className="contacto-detalle"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -644,7 +765,8 @@ const Contactos = () => {
                   <span>Último contacto: {contactoDetalle.ultimoContacto}</span>
                 )}
               </div>
-            </motion.aside>
+              </motion.aside>
+            </>
           )}
         </AnimatePresence>
       </div>
@@ -851,7 +973,11 @@ const ModalContacto = ({ isOpen, modo, data, etiquetasConfig, onClose, onSave })
                     }}
                     onClick={() => toggleEtiqueta(key)}
                   >
-                    {form.etiquetas.includes(key) && <FiCheck />}
+                    {form.etiquetas.includes(key) ? (
+                      <FiCheck />
+                    ) : (
+                      <span className="etiqueta-dot" style={{ background: config.color }} />
+                    )}
                     {config.label}
                   </button>
                 ))}

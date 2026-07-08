@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { eventService, eventTypeService } from '../../services';
+import { eventService, eventTypeService, contactService } from '../../services';
 import { useLoading } from '../../context/LoadingContext';
 import { useToast } from '../../context/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -25,6 +25,9 @@ import {
   FiSettings,
   FiTag
 } from 'react-icons/fi';
+import DatePicker from '../DatePicker';
+import TimePicker from '../TimePicker';
+import ContactAutocomplete from '../ContactAutocomplete';
 import './Agendas.css';
 
 // Configuración de tipos de eventos por defecto
@@ -269,6 +272,29 @@ const Agendas = () => {
   };
 
   // Handlers
+  const normalizarTelefono = (t) => (t || '').replace(/\D/g, '');
+
+  // Si el evento trae un contacto+teléfono que no existe todavía en Contactos,
+  // lo agrega al directorio. Si el teléfono ya está registrado (con este
+  // nombre u otro), no crea un duplicado — el evento simplemente queda
+  // vinculado por teléfono al contacto que ya existe.
+  const sincronizarContacto = async (nombre, telefono) => {
+    const tel = (telefono || '').trim();
+    const nom = (nombre || '').trim();
+    if (!tel || !nom) return;
+    try {
+      const lista = await contactService.list({ page_size: 200 });
+      const telNorm = normalizarTelefono(tel);
+      const yaExiste = (lista?.items || []).some((c) => normalizarTelefono(c.telefono_principal) === telNorm);
+      if (!yaExiste) {
+        await contactService.create({ nombre: nom, telefono_principal: tel });
+        toast.success(`Se agregó "${nom}" a tus contactos`);
+      }
+    } catch {
+      // no bloquear el guardado del evento si esta sincronización falla
+    }
+  };
+
   const handleGuardarEvento = async (data) => {
     showLoading(modalEvento.modo === 'crear' ? 'Creando evento...' : 'Guardando...');
     try {
@@ -312,6 +338,7 @@ const Agendas = () => {
           estado: c.estado || 'pendiente',
         } : ev));
       }
+      await sincronizarContacto(payload.contacto, payload.telefono);
       setModalEvento({ open: false, modo: 'crear', data: null });
     } catch (err) {
       toast.error('Error guardando evento: ' + (err?.response?.data?.error?.message || err.message));
@@ -864,11 +891,9 @@ const ModalEvento = ({ isOpen, modo, data, tiposEvento, onClose, onSave }) => {
                   <FiCalendar />
                   Fecha *
                 </label>
-                <input
-                  type="date"
+                <DatePicker
                   value={form.fecha}
-                  onChange={(e) => setForm({ ...form, fecha: e.target.value })}
-                  required
+                  onChange={(fecha) => setForm({ ...form, fecha })}
                 />
               </div>
 
@@ -877,11 +902,9 @@ const ModalEvento = ({ isOpen, modo, data, tiposEvento, onClose, onSave }) => {
                   <FiClock />
                   Hora *
                 </label>
-                <input
-                  type="time"
+                <TimePicker
                   value={form.hora}
-                  onChange={(e) => setForm({ ...form, hora: e.target.value })}
-                  required
+                  onChange={(hora) => setForm({ ...form, hora })}
                 />
               </div>
             </div>
@@ -892,10 +915,10 @@ const ModalEvento = ({ isOpen, modo, data, tiposEvento, onClose, onSave }) => {
                   <FiUser />
                   Contacto
                 </label>
-                <input
-                  type="text"
+                <ContactAutocomplete
                   value={form.contacto}
-                  onChange={(e) => setForm({ ...form, contacto: e.target.value })}
+                  onChange={(contacto) => setForm({ ...form, contacto })}
+                  onSelect={(c) => setForm({ ...form, contacto: c.nombre, telefono: c.telefono_principal || form.telefono })}
                   placeholder="Nombre del contacto"
                 />
               </div>

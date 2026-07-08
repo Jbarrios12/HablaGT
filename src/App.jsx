@@ -16,6 +16,7 @@ const Contactos = lazy(() => import('./components/Contactos'));
 const Agendas = lazy(() => import('./components/Agendas'));
 const Hablaphone = lazy(() => import('./components/Hablaphone'));
 const ImpersonateEntry = lazy(() => import('./components/Impersonate/ImpersonateEntry'));
+const OperadoraIA = lazy(() => import('./components/OperadoraIA'));
 
 // Componente temporal para páginas en desarrollo
 const PlaceholderPage = ({ title }) => (
@@ -96,7 +97,7 @@ const AppRoutes = () => {
             <Route path="reportes" element={<Reporteria />} />
             <Route path="agendas" element={<Agendas />} />
             <Route path="contactos" element={<Contactos />} />
-            <Route path="ia-operadora" element={<PlaceholderPage title="Operadora IA" />} />
+            <Route path="ia-operadora" element={<OperadoraIA />} />
             <Route path="configuracion" element={<Configuracion />} />
           </Route>
 

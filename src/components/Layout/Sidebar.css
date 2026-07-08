@@ -4,39 +4,40 @@
 
 .sidebar {
   height: 100vh;
-  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  background: linear-gradient(180deg, var(--color-dark) 0%, var(--color-dark-light) 100%);
   display: flex;
   flex-direction: column;
   position: fixed;
   left: 0;
   top: 0;
   z-index: 100;
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  border-right: 1px solid rgb(var(--color-white-rgb) / 0.05);
   overflow: hidden;
 }
 
 /* Header */
 .sidebar-header {
-  padding: 20px;
+  padding: var(--space-5);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgb(var(--color-white-rgb) / 0.05);
   min-height: 72px;
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   overflow: hidden;
 }
 
 .logo-icon {
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, #0ea5e9, #6366f1);
-  border-radius: 12px;
+  background: var(--gradient-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -55,10 +56,10 @@
 .collapse-btn {
   width: 32px;
   height: 32px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: #94a3b8;
+  background: rgb(var(--color-white-rgb) / 0.05);
+  border: 1px solid rgb(var(--color-white-rgb) / 0.1);
+  border-radius: var(--radius-sm);
+  color: var(--color-gray-400);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -68,7 +69,7 @@
 }
 
 .collapse-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(var(--color-white-rgb) / 0.1);
   color: white;
 }
 
@@ -79,7 +80,7 @@
 /* Navigation */
 .sidebar-nav {
   flex: 1;
-  padding: 16px 12px;
+  padding: var(--space-4) var(--space-3);
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -90,16 +91,16 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   padding: 12px 14px;
-  border-radius: 10px;
-  color: #94a3b8;
+  border-radius: var(--radius-md);
+  color: var(--color-gray-400);
   text-decoration: none;
   position: relative;
   transition: all 0.2s;
@@ -107,13 +108,13 @@
 }
 
 .nav-link:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(var(--color-white-rgb) / 0.05);
   color: white;
 }
 
 .nav-link.active {
   color: white;
-  background: rgba(14, 165, 233, 0.1);
+  background: rgb(var(--color-primary-rgb) / 0.1);
 }
 
 .nav-icon {
@@ -139,14 +140,14 @@
   transform: translateY(-50%);
   width: 3px;
   height: 20px;
-  background: linear-gradient(180deg, #0ea5e9, #6366f1);
+  background: var(--gradient-primary);
   border-radius: 0 4px 4px 0;
 }
 
 /* Collapsed state */
 .sidebar.collapsed .sidebar-header {
   justify-content: center;
-  padding: 20px 10px;
+  padding: var(--space-5) 10px;
 }
 
 .sidebar.collapsed .logo {
@@ -164,27 +165,27 @@
 
 /* Footer */
 .sidebar-footer {
-  padding: 16px 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding: var(--space-4) var(--space-3);
+  border-top: 1px solid rgb(var(--color-white-rgb) / 0.05);
 }
 
 .logout-btn {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   padding: 12px 14px;
   background: transparent;
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 10px;
+  border: 1px solid rgb(var(--color-danger-rgb) / 0.2);
+  border-radius: var(--radius-md);
   color: #f87171;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .logout-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.3);
+  background: rgb(var(--color-danger-rgb) / 0.1);
+  border-color: rgb(var(--color-danger-rgb) / 0.3);
 }
 
 .sidebar.collapsed .logout-btn {
@@ -204,6 +205,49 @@
 .sidebar-nav::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 2px;
+}
+
+/* ========================================
+   Tablet (769-1024px): el ancho del sidebar lo
+   controla framer-motion vía inline style ligado a
+   `isCollapsed` (estado de React, ver Sidebar.jsx),
+   pero Layout.css fuerza margin-left:80px en el
+   contenido en este rango sin importar ese estado.
+   Se fuerza aquí el modo "rail" angosto (80px) por
+   CSS para que ambos coincidan, sin tocar React.
+======================================== */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .sidebar {
+    width: 80px !important;
+  }
+
+  .sidebar-header {
+    justify-content: center;
+    padding: var(--space-5) 10px;
+  }
+
+  .logo {
+    justify-content: center;
+  }
+
+  .logo-text,
+  .nav-label {
+    display: none;
+  }
+
+  .nav-link,
+  .logout-btn {
+    justify-content: center;
+    padding: 12px;
+  }
+
+  .nav-icon {
+    margin: 0;
+  }
+
+  .collapse-btn {
+    display: none;
+  }
 }
 
 /* ========================================
@@ -237,7 +281,7 @@
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.55);
+    background: rgb(var(--color-dark-rgb) / 0.55);
     backdrop-filter: blur(2px);
     z-index: 290;
   }

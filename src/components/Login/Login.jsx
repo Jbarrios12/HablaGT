@@ -6,6 +6,7 @@ import {
   HiOutlineLockClosed,
   HiOutlineEye,
   HiOutlineEyeOff,
+  HiOutlineArrowRight,
 } from 'react-icons/hi';
 import { FiHeadphones, FiUser } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
@@ -391,6 +392,18 @@ const Login = () => {
             </div>
 
             <span className="badge-title">HablaGT</span>
+            <p className="badge-tagline">La central inteligente para equipos que atienden en grande</p>
+          </motion.div>
+
+          <motion.div
+            className="feature-chips"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7, duration: 0.6 }}
+          >
+            <span className="feature-chip">IA en vivo</span>
+            <span className="feature-chip">Multi-sede</span>
+            <span className="feature-chip">Reportes en tiempo real</span>
           </motion.div>
         </div>
 
@@ -425,6 +438,7 @@ const Login = () => {
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
+            <span className="form-eyebrow">Panel de agentes</span>
             <h1>Iniciar Sesión</h1>
             <p>Ingresa tus credenciales para acceder</p>
           </motion.div>
@@ -552,6 +566,7 @@ const Login = () => {
                     className="btn-content"
                   >
                     Ingresar
+                    <HiOutlineArrowRight className="btn-arrow" />
                   </motion.span>
                 )}
               </AnimatePresence>

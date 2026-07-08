@@ -1,0 +1,78 @@
+/* ========================================
+   HablaGT - Design Tokens
+   Fuente única de verdad para color, spacing,
+   radios y sombras. Ver PLAN de rediseño.
+======================================== */
+
+:root {
+  /* Color de marca */
+  --color-primary: #0ea5e9;
+  --color-primary-dark: #0284c7;
+  --color-primary-light: #38bdf8;
+  --color-secondary: #6366f1;
+  --color-secondary-light: #8b5cf6;
+  --color-accent: #10b981;
+  --color-accent-dark: #059669;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+
+  /* Escala de grises / oscuros */
+  --color-dark: #0f172a;
+  --color-dark-light: #1e293b;
+  --color-gray-50: #f8fafc;
+  --color-gray-100: #f1f5f9;
+  --color-gray-200: #e2e8f0;
+  --color-gray-300: #cbd5e1;
+  --color-gray-400: #94a3b8;
+  --color-gray-500: #64748b;
+  --color-gray-600: #475569;
+  --color-gray-700: #334155;
+  --color-gray-900: #0f172a;
+  --color-white: #ffffff;
+
+  /* Canales RGB para rgb(var(--x-rgb) / alpha) */
+  --color-primary-rgb: 14 165 233;
+  --color-secondary-rgb: 99 102 241;
+  --color-secondary-light-rgb: 139 92 246;
+  --color-accent-rgb: 16 185 129;
+  --color-danger-rgb: 239 68 68;
+  --color-warning-rgb: 245 158 11;
+  --color-dark-rgb: 15 23 42;
+  --color-white-rgb: 255 255 255;
+
+  --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+
+  /* Radios */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 999px;
+
+  /* Sombras — difusas y suaves (estilo "moderno SaaS": Linear/Stripe/Notion),
+     evitar sombras duras u opacas que se sienten "flat design 2015" */
+  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 16px -2px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 12px 32px -4px rgba(15, 23, 42, 0.08);
+  --shadow-xl: 0 24px 48px -8px rgba(15, 23, 42, 0.12);
+
+  /* Borde sutil para dar definición a tarjetas sin depender de una sombra dura */
+  --border-subtle: 1px solid rgba(15, 23, 42, 0.06);
+
+  /* Tipografía */
+  --font-family-base: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Breakpoints de referencia (documentales, no usables en @media sin preprocesador):
+     1024px = tablet grande / sidebar en modo rail
+     768px  = tablet chica / drawer móvil
+     480px  = móvil pequeño */
+}

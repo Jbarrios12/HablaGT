@@ -76,6 +76,9 @@ const Configuracion = () => {
     voiceai_voice_id: '',
     voiceai_agent_id: '',
     voiceai_base_url: '',
+    ai_brain_provider: '',
+    ai_brain_api_key: '',
+    ai_brain_model: '',
   });
   const [savingIntegration, setSavingIntegration] = useState(false);
 
@@ -135,6 +138,9 @@ const Configuracion = () => {
               voiceai_voice_id: integ?.voice_ai?.voice_id || '',
               voiceai_agent_id: integ?.voice_ai?.agent_id || '',
               voiceai_base_url: integ?.voice_ai?.base_url || '',
+              ai_brain_provider: integ?.ai_brain?.provider || '',
+              ai_brain_api_key: '',
+              ai_brain_model: integ?.ai_brain?.model || '',
             });
           } catch (err) {
             console.error('integration load error', err);
@@ -331,6 +337,7 @@ const Configuracion = () => {
         freepbx_password: '',
         freepbx_api_token: '',
         voiceai_api_key: '',
+        ai_brain_api_key: '',
       }));
     } catch (err) {
       toast.error('Error guardando integración: ' + (err?.response?.data?.error?.message || err.message));
@@ -746,6 +753,54 @@ const Configuracion = () => {
                     value={integrationForm.voiceai_base_url}
                     onChange={(e) => setIntegrationForm({ ...integrationForm, voiceai_base_url: e.target.value })}
                     disabled={!integrationForm.voiceai_enabled}
+                  />
+                </div>
+              </div>
+
+              <div className="setting-card">
+                <div className="card-header-row">
+                  <h3>Cerebro IA (LangChain + CrewAI)</h3>
+                </div>
+                <p>
+                  Motor de razonamiento que decide qué dice y hace la Operadora IA (agendar, confirmar o cancelar
+                  citas). Es independiente del proveedor de voz de arriba: ese solo convierte voz a texto y texto a voz.
+                </p>
+                {integrationForm.ai_brain_provider && (
+                  <div className="cred-status">
+                    <span className={integration?.ai_brain?.has_key ? 'ok' : 'missing'}>
+                      API Key: {integration?.ai_brain?.has_key ? 'configurada' : 'falta'}
+                    </span>
+                  </div>
+                )}
+                <div className="form-group">
+                  <label>Proveedor</label>
+                  <select
+                    value={integrationForm.ai_brain_provider}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, ai_brain_provider: e.target.value })}
+                  >
+                    <option value="">No configurado</option>
+                    <option value="openai">OpenAI</option>
+                    <option value="anthropic">Anthropic</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>API Key {integration?.ai_brain?.has_key && <span className="hint">(dejar vacío para conservar)</span>}</label>
+                  <input
+                    type="password"
+                    placeholder="sk_..."
+                    value={integrationForm.ai_brain_api_key}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, ai_brain_api_key: e.target.value })}
+                    disabled={!integrationForm.ai_brain_provider}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Modelo (opcional)</label>
+                  <input
+                    type="text"
+                    placeholder="ej. gpt-4o-mini"
+                    value={integrationForm.ai_brain_model}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, ai_brain_model: e.target.value })}
+                    disabled={!integrationForm.ai_brain_provider}
                   />
                 </div>
               </div>
