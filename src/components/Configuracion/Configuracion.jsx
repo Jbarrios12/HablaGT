@@ -782,6 +782,7 @@ const Configuracion = () => {
                     <option value="openai">OpenAI</option>
                     <option value="anthropic">Anthropic</option>
                     <option value="deepseek">DeepSeek</option>
+                    <option value="groq">Groq</option>
                   </select>
                 </div>
                 <div className="form-group">
