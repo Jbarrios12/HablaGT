@@ -543,6 +543,143 @@
     color: var(--ink-3);
     padding-top: 8px;
   }
+
+  /* ---------- Checklist (trunk provider) ---------- */
+  .checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .check-item {
+    display: flex;
+    gap: 14px;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .check-item:last-child { border-bottom: none; }
+  .check-box {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 2px solid var(--border-strong);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .check-body { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .check-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .check-title { font-size: 14.5px; font-weight: 700; color: var(--ink); }
+  .check-tag {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+  .check-tag.dato { background: var(--cerebro-bg); color: var(--cerebro); }
+  .check-tag.decision { background: var(--telefonia-bg); color: var(--telefonia); }
+  .check-desc { font-size: 13.5px; color: var(--ink-2); }
+  .check-quote {
+    margin-top: 6px;
+    font-size: 13px;
+    font-style: italic;
+    color: var(--ink);
+    background: var(--bg-subtle);
+    border-left: 2px solid var(--voz);
+    padding: 8px 12px;
+    border-radius: 0 6px 6px 0;
+  }
+
+  /* ---------- Roadmap / stepper ---------- */
+  .roadmap {
+    display: flex;
+    flex-direction: column;
+  }
+  .stage {
+    display: flex;
+    gap: 16px;
+  }
+  .stage-rail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .stage-node {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    border: 2px solid var(--border-strong);
+    background: var(--bg-card);
+    color: var(--ink-3);
+    flex-shrink: 0;
+  }
+  .stage-node.progreso { border-color: var(--telefonia); color: var(--telefonia); }
+  .stage-line {
+    width: 2px;
+    flex: 1;
+    background: var(--border-strong);
+    margin: 2px 0;
+    min-height: 24px;
+  }
+  .stage-body {
+    flex: 1;
+    padding-bottom: 28px;
+  }
+  .stage-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .stage-title { font-size: 15.5px; font-weight: 700; color: var(--ink); }
+  .stage-status {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 3px 8px;
+    border-radius: 5px;
+  }
+  .stage-status.pendiente { background: var(--cost-neutral); color: var(--ink-2); }
+  .stage-status.progreso { background: var(--telefonia-bg); color: var(--telefonia); }
+  .stage-status.no-iniciado { background: var(--bg-subtle); color: var(--ink-3); border: 1px dashed var(--border-strong); }
+  .stage-desc { font-size: 13.5px; color: var(--ink-2); max-width: 62ch; }
+
+  .substages {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  @media (max-width: 640px) {
+    .substages { grid-template-columns: 1fr; }
+  }
+  .substage {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .substage-title { font-size: 13px; font-weight: 700; color: var(--ink); }
+  .substage-desc { font-size: 12.5px; color: var(--ink-2); }
 </style>
 
 <div class="wrap">
@@ -757,6 +894,127 @@
           <span class="lever-title">Empezar con un solo servidor</span>
           <span class="lever-desc">Correr backend + FreePBX en una sola máquina al inicio (~$40-50/mes) en vez de dos separadas, y dividir solo cuando el tráfico real lo exija.</span>
           <span class="lever-impact">Ahorro inmediato ~$50/mes</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. Checklist for trunk provider -->
+  <section class="card">
+    <h2>Antes de contratar el trunk</h2>
+    <h3 class="title">Qué preparar/decidir antes de escribirle al proveedor</h3>
+    <div class="checklist">
+      <div class="check-item">
+        <span class="check-box"></span>
+        <div class="check-body">
+          <div class="check-title-row"><span class="check-title">Datos del negocio</span><span class="check-tag dato">Dato</span></div>
+          <span class="check-desc">Nombre legal de la empresa, NIT, dirección — lo normal para cualquier contrato de servicio en Guatemala.</span>
+        </div>
+      </div>
+      <div class="check-item">
+        <span class="check-box"></span>
+        <div class="check-body">
+          <div class="check-title-row"><span class="check-title">Volumen esperado al inicio</span><span class="check-tag decision">Decisión</span></div>
+          <span class="check-desc">Minutos/mes reales del piloto (ej. 100-300 min), no el escalado a futuro — para que te coticen el plan correcto, no de más.</span>
+        </div>
+      </div>
+      <div class="check-item">
+        <span class="check-box"></span>
+        <div class="check-body">
+          <div class="check-title-row"><span class="check-title">Cuántos números (DID) necesitas ya</span><span class="check-tag decision">Decisión</span></div>
+          <span class="check-desc">Como mínimo 1 por empresa del piloto. No compres números de más antes de tener el segundo cliente real.</span>
+        </div>
+      </div>
+      <div class="check-item">
+        <span class="check-box"></span>
+        <div class="check-body">
+          <div class="check-title-row"><span class="check-title">Tipo de tráfico: bidireccional</span><span class="check-tag dato">Dato</span></div>
+          <span class="check-desc">Salientes automatizadas (recordatorios) Y entrantes (clientes llamando a un agente). Decirlo explícito evita sorpresas por "uso no tradicional" de la línea.</span>
+          <div class="check-quote">"Necesito líneas bidireccionales: llamadas salientes automatizadas (recordatorios) y llamadas entrantes (clientes que llaman para hablar con un agente)."</div>
+        </div>
+      </div>
+      <div class="check-item">
+        <span class="check-box"></span>
+        <div class="check-body">
+          <div class="check-title-row"><span class="check-title">Método de autenticación</span><span class="check-tag decision">Decisión</span></div>
+          <span class="check-desc"><strong style="color:var(--ink)">Por IP fija</strong> si tu servidor FreePBX ya tiene IP pública fija, o <strong style="color:var(--ink)">usuario/contraseña</strong> si todavía no sabes dónde lo vas a hospedar (más flexible por ahora).</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. Roadmap: what's still missing -->
+  <section class="card">
+    <h2>Lo que falta para producción real</h2>
+    <h3 class="title">Cada etapa depende de la anterior</h3>
+    <div class="roadmap">
+      <div class="stage">
+        <div class="stage-rail">
+          <div class="stage-node">1</div>
+          <div class="stage-line"></div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-header">
+            <span class="stage-title">FreePBX real</span>
+            <span class="stage-status pendiente">Pendiente</span>
+          </div>
+          <p class="stage-desc">Instalar y configurar el servidor FreePBX/Asterisk — hoy no existe en ningún lado, ni siquiera se ha instalado. Es aparte del trunk: el trunk es la línea hacia la red real, FreePBX es el programa que la usa.</p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-rail">
+          <div class="stage-node progreso">2</div>
+          <div class="stage-line"></div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-header">
+            <span class="stage-title">Trunk SIP contratado</span>
+            <span class="stage-status progreso">En progreso</span>
+          </div>
+          <p class="stage-desc">Cotizando con AstraQom (y en paralelo Tigo Business / Claro Empresas) — ver checklist arriba para lo que falta preparar antes de cerrar el contrato.</p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-rail">
+          <div class="stage-node">3</div>
+          <div class="stage-line"></div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-header">
+            <span class="stage-title">Puente de audio real (RTP)</span>
+            <span class="stage-status no-iniciado">No iniciado</span>
+          </div>
+          <p class="stage-desc">Hoy el único camino de audio real hacia la IA es vía navegador (Softphone de un agente humano). Para que la IA conteste u origine llamadas <strong style="color:var(--ink)">sin que un humano tenga el navegador abierto</strong>, el backend necesita hablar RTP directo con Asterisk. No se puede probar sin FreePBX real (etapa 1), por eso no se ha construido todavía.</p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-rail">
+          <div class="stage-node">4</div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-header">
+            <span class="stage-title">Sistema de colas híbrido humano + IA</span>
+            <span class="stage-status no-iniciado">No iniciado</span>
+          </div>
+          <p class="stage-desc">Depende 100% de la etapa 3. Permite mezclar agentes humanos y de IA en la misma fila de llamadas entrantes.</p>
+          <div class="substages">
+            <div class="substage">
+              <span class="substage-title">IA como agente en la fila</span>
+              <span class="substage-desc">Una llamada entrante se puede asignar a un humano disponible o a un slot de IA, no solo a humanos.</span>
+            </div>
+            <div class="substage">
+              <span class="substage-title">Fallback automático</span>
+              <span class="substage-desc">Si un humano no contesta o se desconecta, la llamada cae sola a la IA en vez de perderse.</span>
+            </div>
+            <div class="substage">
+              <span class="substage-title">Traspaso manual humano → IA</span>
+              <span class="substage-desc">Un agente humano, a media llamada, puede pasarle el control a la IA.</span>
+            </div>
+            <div class="substage">
+              <span class="substage-title">Pool mixto</span>
+              <span class="substage-desc">Ej. mitad de la capacidad como agentes humanos, la otra mitad como agentes IA, compitiendo por las mismas llamadas.</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
