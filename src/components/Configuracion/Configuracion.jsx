@@ -70,6 +70,7 @@ const Configuracion = () => {
     freepbx_password: '',
     freepbx_api_token: '',
     freepbx_recordings_url: '',
+    freepbx_ai_extension: '',
     voiceai_enabled: false,
     voiceai_provider: 'stub',
     voiceai_api_key: '',
@@ -132,6 +133,7 @@ const Configuracion = () => {
               freepbx_password: '',
               freepbx_api_token: '',
               freepbx_recordings_url: integ?.freepbx?.recordings_url || '',
+              freepbx_ai_extension: integ?.freepbx?.ai_extension || '',
               voiceai_enabled: integ?.voice_ai?.enabled || false,
               voiceai_provider: integ?.voice_ai?.provider || 'stub',
               voiceai_api_key: '',
@@ -679,6 +681,17 @@ const Configuracion = () => {
                     disabled={!integrationForm.freepbx_enabled}
                   />
                   <small>Para que el front pueda reproducir las grabaciones en Reportería.</small>
+                </div>
+                <div className="form-group">
+                  <label>Extensión para llamadas de IA</label>
+                  <input
+                    type="text"
+                    placeholder="ej. 900"
+                    value={integrationForm.freepbx_ai_extension}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, freepbx_ai_extension: e.target.value })}
+                    disabled={!integrationForm.freepbx_enabled}
+                  />
+                  <small>Extensión SIP dedicada que se usa para originar llamadas automáticas de recordatorio (sin agente humano).</small>
                 </div>
               </div>
 
