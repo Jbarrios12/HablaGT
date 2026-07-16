@@ -159,7 +159,7 @@ const Agendas = () => {
       showLoading('Cargando agenda...');
       try {
         const [evs, types] = await Promise.all([
-          eventService.list({ page_size: 100 }),
+          eventService.list({ page_size: 100, estado: 'pendiente' }),
           eventTypeService.list(),
         ]);
         const items = evs?.items || evs || [];

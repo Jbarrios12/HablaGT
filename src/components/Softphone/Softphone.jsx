@@ -78,6 +78,7 @@ const Softphone = ({ isOpen, onToggle }) => {
           const channels = res?.channels || [];
           const stillActive = channels.find((c) => c.id === activeChannelId || c.channel_id === activeChannelId);
           if (!stillActive && callState === 'connected' && channels.length === 0) {
+            realtime.stop();
             setCallState('wrapup');
             stopPolling();
           }
@@ -283,7 +284,7 @@ const Softphone = ({ isOpen, onToggle }) => {
           <motion.div
             className="softphone-panel"
             initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 340, opacity: 1 }}
+            animate={{ width: 320, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
           >
@@ -332,7 +333,7 @@ const Softphone = ({ isOpen, onToggle }) => {
                       rows={4}
                       className="sp-wrapup-textarea"
                     />
-                    <button className="sp-call-btn active" onClick={handleSaveWrapUp}>
+                    <button className="sp-wrapup-save" onClick={handleSaveWrapUp}>
                       Guardar y cerrar
                     </button>
                     <button

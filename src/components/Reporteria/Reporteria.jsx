@@ -67,6 +67,7 @@ const Reporteria = () => {
   const [cdrTotal, setCdrTotal] = useState(0);
   const [stats, setStats] = useState({ totalLlamadas: 0, entrantes: 0, salientes: 0, perdidas: 0, duracionPromedio: 0, tasaConexion: 0 });
   const [hourly, setHourly] = useState([]);
+  const [topAgentes, setTopAgentes] = useState([]);
 
   const [audioActivo, setAudioActivo] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -105,6 +106,7 @@ const Reporteria = () => {
         tasaConexion: st?.tasa_conexion_pct || 0,
       });
       setHourly(st?.distribucion_horaria || []);
+      setTopAgentes(st?.top_agentes || []);
     } catch (err) {
       console.error('cdr load error', err);
     } finally {
@@ -455,53 +457,27 @@ const Reporteria = () => {
                 <span className="grafico-subtitle">Porcentaje de llamadas</span>
               </div>
               <div className="distribucion-tipos">
-                <div className="tipo-item">
-                  <div className="tipo-info">
-                    <span className="tipo-color entrantes"></span>
-                    <span className="tipo-nombre">Entrantes</span>
+                {[
+                  { key: 'Entrantes', pct: stats.total > 0 ? (stats.entrantes / stats.total * 100).toFixed(1) : 0, cls: 'entrantes' },
+                  { key: 'Salientes', pct: stats.total > 0 ? (stats.salientes / stats.total * 100).toFixed(1) : 0, cls: 'salientes' },
+                  { key: 'Perdidas', pct: stats.total > 0 ? (stats.perdidas / stats.total * 100).toFixed(1) : 0, cls: 'perdidas' },
+                ].map((t, i) => (
+                  <div key={t.key} className="tipo-item">
+                    <div className="tipo-info">
+                      <span className={`tipo-color ${t.cls}`}></span>
+                      <span className="tipo-nombre">{t.key}</span>
+                    </div>
+                    <div className="tipo-barra-container">
+                      <motion.div
+                        className={`tipo-barra ${t.cls}`}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${t.pct}%` }}
+                        transition={{ duration: 0.8, delay: i * 0.1 }}
+                      />
+                    </div>
+                    <span className="tipo-porcentaje">{t.pct}%</span>
                   </div>
-                  <div className="tipo-barra-container">
-                    <motion.div
-                      className="tipo-barra entrantes"
-                      initial={{ width: 0 }}
-                      animate={{ width: '42.5%' }}
-                      transition={{ duration: 0.8 }}
-                    />
-                  </div>
-                  <span className="tipo-porcentaje">42.5%</span>
-                </div>
-
-                <div className="tipo-item">
-                  <div className="tipo-info">
-                    <span className="tipo-color salientes"></span>
-                    <span className="tipo-nombre">Salientes</span>
-                  </div>
-                  <div className="tipo-barra-container">
-                    <motion.div
-                      className="tipo-barra salientes"
-                      initial={{ width: 0 }}
-                      animate={{ width: '48.7%' }}
-                      transition={{ duration: 0.8, delay: 0.1 }}
-                    />
-                  </div>
-                  <span className="tipo-porcentaje">48.7%</span>
-                </div>
-
-                <div className="tipo-item">
-                  <div className="tipo-info">
-                    <span className="tipo-color perdidas"></span>
-                    <span className="tipo-nombre">Perdidas</span>
-                  </div>
-                  <div className="tipo-barra-container">
-                    <motion.div
-                      className="tipo-barra perdidas"
-                      initial={{ width: 0 }}
-                      animate={{ width: '8.8%' }}
-                      transition={{ duration: 0.8, delay: 0.2 }}
-                    />
-                  </div>
-                  <span className="tipo-porcentaje">8.8%</span>
-                </div>
+                ))}
               </div>
             </div>
 
@@ -512,29 +488,31 @@ const Reporteria = () => {
                 <span className="grafico-subtitle">Por cantidad de llamadas</span>
               </div>
               <div className="top-agentes">
-                {[
-                  { nombre: 'María García', llamadas: 156, avatar: 'MG' },
-                  { nombre: 'Juan Pérez', llamadas: 142, avatar: 'JP' },
-                  { nombre: 'Carlos López', llamadas: 128, avatar: 'CL' },
-                  { nombre: 'Ana Martínez', llamadas: 98, avatar: 'AM' },
-                ].map((agente, index) => (
-                  <div key={index} className="agente-row">
-                    <div className="agente-rank">#{index + 1}</div>
-                    <div className="agente-avatar">{agente.avatar}</div>
-                    <div className="agente-info">
-                      <span className="agente-nombre">{agente.nombre}</span>
-                      <div className="agente-barra-container">
-                        <motion.div
-                          className="agente-barra"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(agente.llamadas / 156) * 100}%` }}
-                          transition={{ duration: 0.6, delay: index * 0.1 }}
-                        />
+                {topAgentes.length > 0 ? topAgentes.map((agente, index) => {
+                  const initials = (agente.agente_nombre || agente.nombre || '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '??';
+                  const agenteTotal = agente.total || agente.total_llamadas || 0;
+                  const maxCalls = Math.max(...topAgentes.map(a => a.total || a.total_llamadas || 0), 1);
+                  return (
+                    <div key={index} className="agente-row">
+                      <div className="agente-rank">#{index + 1}</div>
+                      <div className="agente-avatar">{initials}</div>
+                      <div className="agente-info">
+                        <span className="agente-nombre">{agente.nombre}</span>
+                        <div className="agente-barra-container">
+                          <motion.div
+                            className="agente-barra"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${(agenteTotal / maxCalls) * 100}%` }}
+                            transition={{ duration: 0.6, delay: index * 0.1 }}
+                          />
+                        </div>
                       </div>
+                      <span className="agente-llamadas">{agenteTotal}</span>
                     </div>
-                    <span className="agente-llamadas">{agente.llamadas}</span>
-                  </div>
-                ))}
+                  );
+                }) : (
+                  <p style={{ color: '#94a3b8', textAlign: 'center', padding: 20 }}>Sin datos de agentes</p>
+                )}
               </div>
             </div>
           </motion.div>

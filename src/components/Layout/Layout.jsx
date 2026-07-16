@@ -13,6 +13,7 @@ const PAGE_TITLES = {
   '/agendas': 'Agendas',
   '/contactos': 'Contactos',
   '/ia-operadora': 'Operadora IA',
+  '/campanas': 'Campañas',
   '/configuracion': 'Configuración',
 };
 

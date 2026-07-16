@@ -489,6 +489,13 @@
   color: var(--color-gray-400);
 }
 
+.transcript-time {
+  font-size: 0.7rem;
+  color: #666;
+  margin-left: 0.5rem;
+  font-family: monospace;
+}
+
 .transcript-line p {
   margin: 0;
   font-size: 0.9rem;

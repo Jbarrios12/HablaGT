@@ -288,12 +288,16 @@ const OperadoraIA = () => {
                     <p>Todavía no hay líneas en esta conversación</p>
                   </div>
                 ) : (
-                  transcriptItems.map((t, i) => (
-                    <div key={i} className={`transcript-line ${t.speaker}`}>
-                      <span className="transcript-speaker">{t.speaker}</span>
-                      <p>{t.text}</p>
-                    </div>
-                  ))
+                  transcriptItems.map((t, i) => {
+                    const ts = t.at ? new Date(t.at).toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '';
+                    return (
+                      <div key={i} className={`transcript-line ${t.speaker}`}>
+                        <span className="transcript-speaker">{t.speaker}</span>
+                        <span className="transcript-time">{ts}</span>
+                        <p>{t.text}</p>
+                      </div>
+                    );
+                  })
                 )}
               </div>
             </motion.aside>

@@ -23,7 +23,8 @@ const menuItems = [
   { path: '/reportes', icon: FiBarChart2, label: 'Reportería' },
   { path: '/agendas', icon: FiCalendar, label: 'Agendas' },
   { path: '/contactos', icon: FiUsers, label: 'Contactos' },
-  { path: '/ia-operadora', icon: FiCpu, label: 'Operadora IA' },
+  { path: '/campanas', icon: FiCpu, label: 'Campañas' },
+  { path: '/ia-operadora', icon: FiHeadphones, label: 'Operadora IA' },
   { path: '/configuracion', icon: FiSettings, label: 'Configuración' },
 ];
 
