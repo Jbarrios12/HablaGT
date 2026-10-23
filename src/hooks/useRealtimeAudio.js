@@ -7,17 +7,32 @@ export function useRealtimeAudio(callId) {
   const [transcript, setTranscript] = useState([]);
   const [error, setError] = useState(null);
   const clientRef = useRef(null);
+  const pollRef = useRef(null);
+
+  const stopPolling = () => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  };
 
   const start = useCallback(async () => {
-    if (!callId || clientRef.current) return;
+    if (!callId || clientRef.current || pollRef.current) return;
     setError(null);
     setStatus("connecting");
     try {
-      await realtimeService.start(callId, {
+      const session = await realtimeService.start(callId, {
         provider: "stub",
         voice_id: "default",
         language: "es",
       });
+      // The AI of this call runs on the PBX (the caller hears it on the
+      // phone): the button only switches it on/off, so no browser
+      // mic/speaker bridge is opened. Its conversation is in Operadora IA.
+      if (session?.provider === "pbx") {
+        setStatus("open");
+        return;
+      }
       const url = softphoneService.audioSocketURL(callId);
       const client = new RealtimeAudioClient({
         url,
@@ -46,6 +61,7 @@ export function useRealtimeAudio(callId) {
   }, [callId]);
 
   const stop = useCallback(async () => {
+    stopPolling();
     if (clientRef.current) {
       await clientRef.current.stop();
       clientRef.current = null;
@@ -62,6 +78,7 @@ export function useRealtimeAudio(callId) {
 
   useEffect(() => {
     return () => {
+      stopPolling();
       clientRef.current?.stop();
       clientRef.current = null;
     };

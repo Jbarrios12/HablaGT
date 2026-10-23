@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRealtimeAudio } from '../../hooks/useRealtimeAudio';
+import { PRESENCE_OPTIONS, usePresence } from '../../hooks/usePresence';
 import {
   FiPhone,
   FiPhoneOff,
@@ -24,6 +25,7 @@ import { useLoading } from '../../context/LoadingContext';
 import { useToast } from '../../context/ToastContext';
 import './Softphone.css';
 
+
 const Softphone = ({ isOpen, onToggle }) => {
   const { showLoading, hideLoading } = useLoading();
   const toast = useToast();
@@ -37,8 +39,9 @@ const Softphone = ({ isOpen, onToggle }) => {
   const [activeTab, setActiveTab] = useState('keypad');
   const [recentCalls, setRecentCalls] = useState([]);
   const [lastCDR, setLastCDR] = useState(null);
-  const [showAI, setShowAI] = useState(false);
   const realtime = useRealtimeAudio(callState !== 'idle' ? activeChannelId : null);
+  const aiOn = realtime.status === 'connecting' || realtime.status === 'open';
+  const { presence, changePresence } = usePresence();
   const [wrapUpNotes, setWrapUpNotes] = useState('');
   const [disposition, setDisposition] = useState('');
   const pollRef = useRef(null);
@@ -180,7 +183,6 @@ const Softphone = ({ isOpen, onToggle }) => {
     }
     if (realtime.status !== 'idle') {
       try { await realtime.stop(); } catch {}
-      setShowAI(false);
     }
     showLoading('Finalizando...');
     try {
@@ -307,6 +309,26 @@ const Softphone = ({ isOpen, onToggle }) => {
                 </button>
               </div>
 
+              <div className="sp-presence" role="group" aria-label="Mi estado">
+                {PRESENCE_OPTIONS.map((o) => (
+                  <button
+                    key={o.value}
+                    type="button"
+                    className={`sp-presence-btn ${o.css} ${presence === o.value ? 'active' : ''}`}
+                    onClick={async () => {
+                      if (presence === o.value) return;
+                      const ok = await changePresence(o.value);
+                      if (ok && o.value !== 'disponible') toast.info(`Estado: ${o.label}. Las llamadas de la campaña irán a otro agente libre.`);
+                      if (!ok) toast.error('No se pudo cambiar tu estado');
+                    }}
+                    title={o.value === 'disponible' ? 'Recibir llamadas transferidas' : 'No recibir llamadas transferidas: se asignan a otro agente'}
+                  >
+                    <span className="sp-presence-dot" />
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+
               <div className="sp-body">
                 {callState === 'wrapup' ? (
                   <div className="sp-wrapup">
@@ -403,58 +425,19 @@ const Softphone = ({ isOpen, onToggle }) => {
                           <span>Transfer</span>
                         </button>
                         <button
-                          className={`action-btn ${showAI ? 'active' : ''}`}
-                          onClick={() => setShowAI((s) => !s)}
-                          title="Operadora IA"
+                          className={`action-btn ${aiOn ? 'active' : ''}`}
+                          onClick={aiOn ? realtime.stop : realtime.start}
+                          title={aiOn ? 'Desactivar la Operadora IA en esta llamada' : 'Activar la Operadora IA en esta llamada'}
+                          aria-pressed={aiOn}
                         >
                           <FiCpu />
-                          <span>IA</span>
+                          <span>{realtime.status === 'connecting' ? 'Conectando' : aiOn ? 'IA activa' : 'IA'}</span>
                         </button>
                       </div>
                     )}
 
-                    {showAI && (
-                      <div className="sp-ai-panel">
-                        <div className="sp-ai-header">
-                          <strong>Operadora IA</strong>
-                          <span className={`sp-ai-status ${realtime.status}`}>
-                            {realtime.status === 'idle' && 'Inactiva'}
-                            {realtime.status === 'connecting' && 'Conectando...'}
-                            {realtime.status === 'open' && 'En línea'}
-                            {realtime.status === 'closed' && 'Cerrada'}
-                            {realtime.status === 'error' && 'Error'}
-                          </span>
-                        </div>
-                        {realtime.status === 'idle' && (
-                          <button
-                            className="sp-ai-btn primary"
-                            onClick={realtime.start}
-                          >
-                            Activar IA
-                          </button>
-                        )}
-                        {realtime.status !== 'idle' && (
-                          <button
-                            className="sp-ai-btn"
-                            onClick={realtime.stop}
-                          >
-                            Desactivar IA
-                          </button>
-                        )}
-                        {realtime.error && (
-                          <div className="sp-ai-error">{realtime.error}</div>
-                        )}
-                        {realtime.transcript.length > 0 && (
-                          <div className="sp-ai-transcript">
-                            {realtime.transcript.slice(-6).map((t, i) => (
-                              <div key={i} className={`sp-ai-line ${t.speaker}`}>
-                                <span className="sp-ai-speaker">{t.speaker}</span>
-                                <span>{t.text}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                    {realtime.error && (
+                      <div className="sp-ai-error">{realtime.error}</div>
                     )}
 
                     <button className="end-call-btn" onClick={handleHangup}>

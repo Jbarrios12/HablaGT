@@ -1,10 +1,24 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>hablagt</title>
+    <title>HablaGT</title>
+    <script>
+      // Aplica el tema guardado antes de pintar (ver src/context/ThemeContext.jsx).
+      (function () {
+        try {
+          var mode = localStorage.getItem('hablagt.theme') || 'light';
+          var accent = localStorage.getItem('hablagt.accent') || 'oceano';
+          if (mode === 'system') {
+            mode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          document.documentElement.dataset.theme = mode === 'dark' ? 'dark' : 'light';
+          document.documentElement.dataset.accent = accent;
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

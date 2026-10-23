@@ -103,21 +103,21 @@
   border: 2px solid transparent;
 }
 
-.ring-1 {
+.loading-screen .ring-1 {
   width: 100px;
   height: 100px;
   border-top-color: var(--color-primary);
   border-right-color: var(--color-primary);
 }
 
-.ring-2 {
+.loading-screen .ring-2 {
   width: 120px;
   height: 120px;
   border-top-color: var(--color-secondary);
   border-left-color: var(--color-secondary);
 }
 
-.ring-3 {
+.loading-screen .ring-3 {
   width: 140px;
   height: 140px;
   border-bottom-color: var(--color-secondary-light);
@@ -133,7 +133,7 @@
   transform: translate(-50%, -50%);
 }
 
-.pulse {
+.loading-screen .pulse {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -142,7 +142,7 @@
   height: 80px;
   border-radius: var(--radius-xl);
   border: 2px solid var(--color-primary);
-  animation: pulse 2s ease-out infinite;
+  animation: loading-pulse 2s ease-out infinite;
 }
 
 .pulse-1 {
@@ -157,7 +157,7 @@
   animation-delay: 1s;
 }
 
-@keyframes pulse {
+@keyframes loading-pulse {
   0% {
     transform: translate(-50%, -50%) scale(1);
     opacity: 0.6;
@@ -307,22 +307,22 @@
     height: 100px;
   }
 
-  .ring-1 {
+  .loading-screen .ring-1 {
     width: 80px;
     height: 80px;
   }
 
-  .ring-2 {
+  .loading-screen .ring-2 {
     width: 100px;
     height: 100px;
   }
 
-  .ring-3 {
+  .loading-screen .ring-3 {
     width: 120px;
     height: 120px;
   }
 
-  .pulse {
+  .loading-screen .pulse {
     width: 60px;
     height: 60px;
     border-radius: var(--radius-lg);

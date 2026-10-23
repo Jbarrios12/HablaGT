@@ -26,7 +26,7 @@
 .picker-trigger:focus-visible {
   outline: none;
   border-color: var(--color-secondary);
-  background: white;
+  background: var(--surface);
   box-shadow: 0 0 0 3px rgb(var(--color-secondary-rgb) / 0.1);
 }
 
@@ -46,7 +46,7 @@
 .picker-popover {
   position: fixed;
   z-index: 1100;
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-lg);
   border: var(--border-subtle);
   box-shadow: var(--shadow-xl);

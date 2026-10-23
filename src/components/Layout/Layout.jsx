@@ -4,6 +4,7 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import Softphone from '../Softphone';
 import ImpersonationBanner from './ImpersonationBanner';
+import { ModulesProvider } from '../../context/ModulesContext';
 import './Layout.css';
 
 const PAGE_TITLES = {
@@ -28,6 +29,7 @@ const Layout = () => {
   }, [location.pathname]);
 
   return (
+    <ModulesProvider>
     <div className="layout">
       <Sidebar mobileOpen={mobileNavOpen} onNavigate={() => setMobileNavOpen(false)} />
       <div
@@ -52,6 +54,7 @@ const Layout = () => {
         </div>
       </div>
     </div>
+    </ModulesProvider>
   );
 };
 

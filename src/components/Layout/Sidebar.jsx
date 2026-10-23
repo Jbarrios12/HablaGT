@@ -15,13 +15,14 @@ import {
 } from 'react-icons/fi';
 import { useLoading } from '../../context/LoadingContext';
 import { useAuth } from '../../context/AuthContext';
+import { useModules } from '../../context/ModulesContext';
 import './Sidebar.css';
 
 const menuItems = [
   { path: '/dashboard', icon: FiHome, label: 'Dashboard' },
   { path: '/hablaphone', icon: FiPhone, label: 'Hablaphone' },
   { path: '/reportes', icon: FiBarChart2, label: 'Reportería' },
-  { path: '/agendas', icon: FiCalendar, label: 'Agendas' },
+  { path: '/agendas', icon: FiCalendar, label: 'Agendas', module: 'citas' },
   { path: '/contactos', icon: FiUsers, label: 'Contactos' },
   { path: '/campanas', icon: FiCpu, label: 'Campañas' },
   { path: '/ia-operadora', icon: FiHeadphones, label: 'Operadora IA' },
@@ -34,6 +35,7 @@ const Sidebar = ({ mobileOpen = false, onNavigate }) => {
   const navigate = useNavigate();
   const { showLoadingFor } = useLoading();
   const { logout } = useAuth();
+  const { has } = useModules();
 
   const handleNavClick = (e, path) => {
     onNavigate?.();
@@ -101,7 +103,7 @@ const Sidebar = ({ mobileOpen = false, onNavigate }) => {
       {/* Navigation */}
       <nav className="sidebar-nav">
         <ul>
-          {menuItems.map((item) => (
+          {menuItems.filter((item) => !item.module || has(item.module)).map((item) => (
             <li key={item.path}>
               <NavLink
                 to={item.path}

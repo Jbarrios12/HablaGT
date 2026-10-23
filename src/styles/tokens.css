@@ -1,47 +1,21 @@
 /* ========================================
-   HablaGT - Design Tokens
-   Fuente única de verdad para color, spacing,
-   radios y sombras. Ver PLAN de rediseño.
+   HablaGT - Design Tokens / Temas
+   ----------------------------------------
+   Fuente única de verdad para color, spacing, radios y sombras.
+
+   Cómo se usa:
+   - En los componentes usa SIEMPRE los tokens semánticos
+     (--bg, --surface, --text, --border, --brand, --success...),
+     nunca colores hex sueltos: así cambian solos con el tema.
+   - El tema se elige con <html data-theme="light|dark"> y el color
+     de marca con <html data-accent="oceano|indigo|esmeralda|naranja|violeta">
+     (lo aplica src/context/ThemeContext.jsx y se recuerda por usuario).
+   - Para un tema nuevo basta con un bloque [data-theme="x"] o
+     [data-accent="x"] que redefina los tokens semánticos.
 ======================================== */
 
+/* ---------- Escala (no depende del tema) ---------- */
 :root {
-  /* Color de marca */
-  --color-primary: #0ea5e9;
-  --color-primary-dark: #0284c7;
-  --color-primary-light: #38bdf8;
-  --color-secondary: #6366f1;
-  --color-secondary-light: #8b5cf6;
-  --color-accent: #10b981;
-  --color-accent-dark: #059669;
-  --color-danger: #ef4444;
-  --color-warning: #f59e0b;
-
-  /* Escala de grises / oscuros */
-  --color-dark: #0f172a;
-  --color-dark-light: #1e293b;
-  --color-gray-50: #f8fafc;
-  --color-gray-100: #f1f5f9;
-  --color-gray-200: #e2e8f0;
-  --color-gray-300: #cbd5e1;
-  --color-gray-400: #94a3b8;
-  --color-gray-500: #64748b;
-  --color-gray-600: #475569;
-  --color-gray-700: #334155;
-  --color-gray-900: #0f172a;
-  --color-white: #ffffff;
-
-  /* Canales RGB para rgb(var(--x-rgb) / alpha) */
-  --color-primary-rgb: 14 165 233;
-  --color-secondary-rgb: 99 102 241;
-  --color-secondary-light-rgb: 139 92 246;
-  --color-accent-rgb: 16 185 129;
-  --color-danger-rgb: 239 68 68;
-  --color-warning-rgb: 245 158 11;
-  --color-dark-rgb: 15 23 42;
-  --color-white-rgb: 255 255 255;
-
-  --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
-
   /* Spacing */
   --space-1: 4px;
   --space-2: 8px;
@@ -52,27 +26,227 @@
   --space-7: 32px;
 
   /* Radios */
+  --radius-xs: 6px;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 20px;
   --radius-full: 999px;
 
-  /* Sombras — difusas y suaves (estilo "moderno SaaS": Linear/Stripe/Notion),
-     evitar sombras duras u opacas que se sienten "flat design 2015" */
+  /* Tipografía */
+  --font-family-base: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.85rem;
+  --font-size-md: 0.9rem;
+  --font-size-lg: 1.1rem;
+  --font-size-xl: 1.5rem;
+
+  /* Controles */
+  --control-height: 40px;
+  --control-height-sm: 32px;
+  --transition-fast: 0.15s ease;
+
+  /* Breakpoints de referencia (documentales):
+     1024px = tablet grande / sidebar en modo rail
+     768px  = tablet chica / drawer móvil
+     480px  = móvil pequeño */
+}
+
+/* ---------- Color de marca (data-accent) ---------- */
+:root,
+[data-accent="oceano"] {
+  --brand: #0284c7;
+  --brand-hover: #0369a1;
+  --brand-light: #38bdf8;
+  --brand-rgb: 2 132 199;
+  --brand-2: #6366f1;
+  --brand-2-rgb: 99 102 241;
+}
+
+[data-accent="indigo"] {
+  --brand: #4f46e5;
+  --brand-hover: #4338ca;
+  --brand-light: #818cf8;
+  --brand-rgb: 79 70 229;
+  --brand-2: #8b5cf6;
+  --brand-2-rgb: 139 92 246;
+}
+
+[data-accent="esmeralda"] {
+  --brand: #059669;
+  --brand-hover: #047857;
+  --brand-light: #34d399;
+  --brand-rgb: 5 150 105;
+  --brand-2: #0891b2;
+  --brand-2-rgb: 8 145 178;
+}
+
+[data-accent="naranja"] {
+  --brand: #ea580c;
+  --brand-hover: #c2410c;
+  --brand-light: #fb923c;
+  --brand-rgb: 234 88 12;
+  --brand-2: #e11d48;
+  --brand-2-rgb: 225 29 72;
+}
+
+[data-accent="violeta"] {
+  --brand: #9333ea;
+  --brand-hover: #7e22ce;
+  --brand-light: #c084fc;
+  --brand-rgb: 147 51 234;
+  --brand-2: #db2777;
+  --brand-2-rgb: 219 39 119;
+}
+
+/* ---------- Tema claro (por defecto) ---------- */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* Fondos */
+  --bg: #f8fafc;               /* fondo de la app */
+  --surface: #ffffff;          /* tarjetas, modales, inputs */
+  --surface-2: #f8fafc;        /* zonas suaves dentro de una tarjeta */
+  --surface-3: #f1f5f9;        /* hover, chips, cabeceras de tabla */
+  --surface-inverse: #0f172a;  /* bloques oscuros (tooltips, softphone) */
+  --surface-inverse-2: #1e293b;
+
+  /* Texto */
+  --text: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-subtle: #94a3b8;
+  --text-on-brand: #ffffff;
+  --brand-text: var(--brand);  /* enlaces y textos en color de marca */
+
+  /* Bordes */
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+
+  /* Estados */
+  --success: #10b981;
+  --success-strong: #059669;
+  --success-text: #047857;
+  --success-rgb: 16 185 129;
+  --danger: #ef4444;
+  --danger-strong: #dc2626;
+  --danger-text: #b91c1c;
+  --danger-rgb: 239 68 68;
+  --warning: #f59e0b;
+  --warning-strong: #d97706;
+  --warning-text: #b45309;
+  --warning-rgb: 245 158 11;
+  --info: #3b82f6;
+  --info-text: #1d4ed8;
+  --info-rgb: 59 130 246;
+
+  /* Fondos suaves de los estados (badges, avisos) */
+  --success-soft: #dcfce7;
+  --danger-soft: #fee2e2;
+  --warning-soft: #fef3c7;
+  --info-soft: #dbeafe;
+  --brand-soft: rgb(var(--brand-rgb) / 0.1);
+
+  /* Navegación lateral (oscura en ambos temas) */
+  --sidebar-bg: #0f172a;
+  --sidebar-bg-2: #1e293b;
+
+  /* Overlay de modales */
+  --overlay: rgb(15 23 42 / 0.55);
+
+  /* Sombras: difusas y suaves */
   --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
   --shadow-md: 0 4px 16px -2px rgba(15, 23, 42, 0.06);
   --shadow-lg: 0 12px 32px -4px rgba(15, 23, 42, 0.08);
   --shadow-xl: 0 24px 48px -8px rgba(15, 23, 42, 0.12);
+  --focus-ring: 0 0 0 3px rgb(var(--brand-rgb) / 0.18);
+}
 
-  /* Borde sutil para dar definición a tarjetas sin depender de una sombra dura */
-  --border-subtle: 1px solid rgba(15, 23, 42, 0.06);
+/* ---------- Tema oscuro ---------- */
+[data-theme="dark"] {
+  color-scheme: dark;
 
-  /* Tipografía */
-  --font-family-base: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --bg: #0b1120;
+  --surface: #131c2e;
+  --surface-2: #172238;
+  --surface-3: #1e2a42;
+  --surface-inverse: #020617;
+  --surface-inverse-2: #0f172a;
 
-  /* Breakpoints de referencia (documentales, no usables en @media sin preprocesador):
-     1024px = tablet grande / sidebar en modo rail
-     768px  = tablet chica / drawer móvil
-     480px  = móvil pequeño */
+  --text: #e2e8f0;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-subtle: #64748b;
+  --text-on-brand: #ffffff;
+  --brand-text: var(--brand-light);
+
+  --border: #26334d;
+  --border-strong: #34445f;
+
+  --success-text: #34d399;
+  --danger-text: #f87171;
+  --warning-text: #fbbf24;
+  --info-text: #93c5fd;
+
+  --success-soft: rgb(16 185 129 / 0.16);
+  --danger-soft: rgb(239 68 68 / 0.16);
+  --warning-soft: rgb(245 158 11 / 0.16);
+  --info-soft: rgb(59 130 246 / 0.18);
+  --brand-soft: rgb(var(--brand-rgb) / 0.2);
+
+  --sidebar-bg: #070c18;
+  --sidebar-bg-2: #0f172a;
+
+  --overlay: rgb(2 6 23 / 0.7);
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px -2px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 12px 32px -4px rgba(0, 0, 0, 0.45);
+  --shadow-xl: 0 24px 48px -8px rgba(0, 0, 0, 0.55);
+  --focus-ring: 0 0 0 3px rgb(var(--brand-rgb) / 0.35);
+}
+
+/* ---------- Derivados y alias heredados ----------
+   Los nombres --color-* son los que ya usan los componentes; aquí
+   apuntan a los semánticos para que todo siga al tema. En código
+   nuevo usa los semánticos de arriba. */
+:root {
+  --gradient-brand: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+  --gradient-primary: var(--gradient-brand);
+  --border-subtle: 1px solid var(--border);
+
+  --color-primary: var(--brand);
+  --color-primary-dark: var(--brand-hover);
+  --color-primary-light: var(--brand-light);
+  --color-primary-rgb: var(--brand-rgb);
+  --color-secondary: var(--brand-2);
+  --color-secondary-light: var(--brand-2);
+  --color-secondary-rgb: var(--brand-2-rgb);
+  --color-secondary-light-rgb: var(--brand-2-rgb);
+  --color-accent: var(--success);
+  --color-accent-dark: var(--success-strong);
+  --color-accent-rgb: var(--success-rgb);
+  --color-danger: var(--danger);
+  --color-danger-rgb: var(--danger-rgb);
+  --color-warning: var(--warning);
+  --color-warning-rgb: var(--warning-rgb);
+
+  /* La escala de grises es semántica: oscuro = texto, 50/100 = fondos,
+     200/300 = bordes, 400-700 = textos secundarios. */
+  --color-dark: var(--text);
+  --color-dark-light: var(--text-secondary);
+  --color-gray-900: var(--text);
+  --color-gray-700: var(--text-secondary);
+  --color-gray-600: var(--text-secondary);
+  --color-gray-500: var(--text-muted);
+  --color-gray-400: var(--text-subtle);
+  --color-gray-300: var(--border-strong);
+  --color-gray-200: var(--border);
+  --color-gray-100: var(--surface-3);
+  --color-gray-50: var(--surface-2);
+  --color-white: #ffffff;
+
+  --color-dark-rgb: 15 23 42;
+  --color-white-rgb: 255 255 255;
 }

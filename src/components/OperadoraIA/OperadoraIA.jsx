@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  FiCpu,
+  FiCpu, FiHeadphones,
   FiPhone,
   FiChevronLeft,
   FiChevronRight,
@@ -21,6 +21,7 @@ const TRANSCRIPT_POLL_MS = 2500;
 const SESIONES_POR_PAGINA = 10;
 
 const ESTADO_LABELS = {
+  idle: 'IA en pausa',
   starting: 'Iniciando',
   active: 'Activa',
   stopping: 'Deteniendo',
@@ -140,7 +141,7 @@ const OperadoraIA = () => {
     <div className="operadora-ia">
       <div className="operadora-header">
         <div className="operadora-title">
-          <FiCpu className="title-icon" />
+          <FiHeadphones className="title-icon" />
           <div>
             <h1>Operadora IA</h1>
             <p>Supervisión en vivo de las sesiones de IA en llamadas</p>
@@ -188,7 +189,7 @@ const OperadoraIA = () => {
         <div className="tabla-section-header">
           <h2>Sesiones de IA</h2>
           <span className="results-count">
-            {sessions.length} sesión{sessions.length !== 1 ? 'es' : ''} desde el último reinicio del servidor
+            {sessions.length} sesión{sessions.length !== 1 ? 'es' : ''} · {sesionesActivas.length} en curso
           </span>
         </div>
 
@@ -197,7 +198,8 @@ const OperadoraIA = () => {
             <thead>
               <tr>
                 <th>Llamada</th>
-                <th>Proveedor</th>
+                <th>Agente IA</th>
+                <th>Turnos</th>
                 <th>Estado</th>
                 <th>Iniciada</th>
                 <th>Duración</th>
@@ -207,12 +209,15 @@ const OperadoraIA = () => {
             <tbody>
               {sessionsPaginadas.map((s) => (
                 <tr key={s.id}>
-                  <td className="fecha-cell">{s.id.slice(0, 8)}…</td>
-                  <td>{s.provider}</td>
+                  <td className="fecha-cell" title={s.id}>
+                    {s.caller_number ? `${s.caller_number} → ${s.dialed_number || '?'}` : `${s.id.slice(0, 8)}…`}
+                  </td>
+                  <td>{s.agent_name || (s.provider === 'pbx' ? 'Agente IA' : s.provider)}</td>
+                  <td>{s.turns ?? 0}</td>
                   <td>
                     <span className={`estado-badge ${s.state}`}>{ESTADO_LABELS[s.state] || s.state}</span>
                   </td>
-                  <td className="fecha-cell">{new Date(s.started_at).toLocaleTimeString()}</td>
+                  <td className="fecha-cell">{new Date(s.started_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</td>
                   <td className="duracion-cell">{formatDuracion(calcularDuracionSeg(s, now))}</td>
                   <td>
                     <div className="row-actions">
@@ -234,7 +239,7 @@ const OperadoraIA = () => {
           {sessions.length === 0 && (
             <div className="empty-state">
               <FiCpu />
-              <p>No hay sesiones de IA activas en este momento</p>
+              <p>Todavía no hay sesiones de IA</p>
             </div>
           )}
         </div>

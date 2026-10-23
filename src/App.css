@@ -18,8 +18,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #0f172a;
-  color: #ffffff;
+  background: var(--bg);
+  color: var(--text);
   line-height: 1.6;
 }
 
@@ -30,27 +30,27 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.5);
+  background: var(--border-strong);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.7);
+  background: var(--text-subtle);
 }
 
 /* Selection */
 ::selection {
-  background: rgba(99, 102, 241, 0.3);
-  color: #ffffff;
+  background: rgb(var(--brand-rgb) / 0.25);
+  color: var(--text);
 }
 
 /* Focus visible */
 :focus-visible {
-  outline: 2px solid #6366f1;
+  outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
 
@@ -77,4 +77,11 @@ input,
 textarea,
 select {
   font-family: inherit;
+}
+
+/* Al cambiar de tema todo cambia de color a la vez y sin parpadeo. */
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
 }

@@ -13,14 +13,14 @@
 /* ========================================
    Stats Cards - Auto-fit Grid
 ======================================== */
-.stats-grid {
+.dashboard .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: var(--space-5);
 }
 
-.stat-card {
-  background: white;
+.dashboard .stat-card {
+  background: var(--surface);
   border-radius: var(--radius-xl);
   padding: var(--space-5);
   display: flex;
@@ -32,12 +32,12 @@
   min-width: 0;
 }
 
-.stat-card:hover {
+.dashboard .stat-card:hover {
   transform: translateY(-3px);
   box-shadow: var(--shadow-lg);
 }
 
-.stat-icon {
+.dashboard .stat-icon {
   width: 48px;
   height: 48px;
   border-radius: var(--radius-lg);
@@ -48,27 +48,27 @@
   flex-shrink: 0;
 }
 
-.stat-card.blue .stat-icon {
+.dashboard .stat-card.blue .stat-icon {
   background: rgb(var(--color-primary-rgb) / 0.1);
   color: var(--color-primary);
 }
 
-.stat-card.green .stat-icon {
+.dashboard .stat-card.green .stat-icon {
   background: rgb(var(--color-accent-rgb) / 0.1);
   color: var(--color-accent);
 }
 
-.stat-card.purple .stat-icon {
+.dashboard .stat-card.purple .stat-icon {
   background: rgb(var(--color-secondary-light-rgb) / 0.1);
   color: var(--color-secondary-light);
 }
 
-.stat-card.red .stat-icon {
+.dashboard .stat-card.red .stat-icon {
   background: rgb(var(--color-danger-rgb) / 0.1);
   color: var(--color-danger);
 }
 
-.stat-content {
+.dashboard .stat-content {
   flex: 1;
   min-width: 0;
 }
@@ -90,7 +90,7 @@
   flex-wrap: wrap;
 }
 
-.stat-value {
+.dashboard .stat-value {
   font-size: 1.6rem;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -125,7 +125,7 @@
 }
 
 .dashboard-card {
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-xl);
   padding: var(--space-5);
   border: var(--border-subtle);
@@ -199,22 +199,22 @@
   flex-shrink: 0;
 }
 
-.call-type-icon.incoming {
+.dashboard .call-type-icon.incoming {
   background: rgb(var(--color-accent-rgb) / 0.1);
   color: var(--color-accent);
 }
 
-.call-type-icon.outgoing {
+.dashboard .call-type-icon.outgoing {
   background: rgb(var(--color-primary-rgb) / 0.1);
   color: var(--color-primary);
 }
 
-.call-type-icon.missed {
+.dashboard .call-type-icon.missed {
   background: rgb(var(--color-danger-rgb) / 0.1);
   color: var(--color-danger);
 }
 
-.call-info {
+.dashboard .call-info {
   flex: 1;
   min-width: 0;
 }
@@ -229,7 +229,7 @@
   text-overflow: ellipsis;
 }
 
-.call-number {
+.dashboard .call-number {
   font-size: 0.75rem;
   color: var(--color-gray-500);
   white-space: nowrap;
@@ -276,15 +276,15 @@
   color: var(--color-accent);
 }
 
-.ai-status .status-dot {
+.dashboard .ai-status .status-dot {
   width: 8px;
   height: 8px;
   background: currentColor;
   border-radius: 50%;
-  animation: pulse 2s ease-in-out infinite;
+  animation: dashboard-pulse 2s ease-in-out infinite;
 }
 
-@keyframes pulse {
+@keyframes dashboard-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
@@ -295,13 +295,13 @@
   gap: 16px;
 }
 
-.ai-visual {
+.dashboard .ai-visual {
   display: flex;
   justify-content: center;
   padding: 12px 0;
 }
 
-.ai-circle {
+.dashboard .ai-circle {
   width: 80px;
   height: 80px;
   background: var(--gradient-primary);
@@ -313,32 +313,32 @@
   box-shadow: var(--shadow-md);
 }
 
-.ai-icon {
+.dashboard .ai-icon {
   font-size: 32px;
   color: white;
   z-index: 2;
 }
 
-.ai-ring {
+.dashboard .ai-ring {
   position: absolute;
   border-radius: 50%;
   border: 2px solid rgb(var(--color-primary-rgb) / 0.3);
-  animation: ringPulse 2s ease-out infinite;
+  animation: dashboard-ring-pulse 2s ease-out infinite;
 }
 
-.ai-ring.ring-1 {
+.dashboard .ai-ring.ring-1 {
   width: 105px;
   height: 105px;
   animation-delay: 0s;
 }
 
-.ai-ring.ring-2 {
+.dashboard .ai-ring.ring-2 {
   width: 130px;
   height: 130px;
   animation-delay: 0.5s;
 }
 
-@keyframes ringPulse {
+@keyframes dashboard-ring-pulse {
   0% {
     transform: scale(0.8);
     opacity: 1;
@@ -349,13 +349,13 @@
   }
 }
 
-.ai-stats-grid {
+.dashboard .ai-stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
   gap: 8px;
 }
 
-.ai-stat {
+.dashboard .ai-stat {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -365,25 +365,25 @@
   min-width: 0;
 }
 
-.ai-stat-icon {
+.dashboard .ai-stat-icon {
   font-size: 16px;
   color: var(--color-primary);
   flex-shrink: 0;
 }
 
-.ai-stat-info {
+.dashboard .ai-stat-info {
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
 
-.ai-stat-value {
+.dashboard .ai-stat-value {
   font-size: 1rem;
   font-weight: 700;
   color: var(--color-dark);
 }
 
-.ai-stat-label {
+.dashboard .ai-stat-label {
   font-size: 0.65rem;
   color: var(--color-gray-500);
   white-space: nowrap;
@@ -550,7 +550,7 @@
 
 /* Pantalla grande con todo abierto (1400px - 600px = 800px contenido) */
 @media (max-width: 1400px) {
-  .stats-grid {
+  .dashboard .stats-grid {
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   }
 
@@ -561,7 +561,7 @@
 
 /* Pantalla mediana (1200px - 600px = 600px contenido) */
 @media (max-width: 1200px) {
-  .stats-grid {
+  .dashboard .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 
@@ -569,14 +569,14 @@
     grid-template-columns: 1fr;
   }
 
-  .ai-stats-grid {
+  .dashboard .ai-stats-grid {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
 /* Pantalla pequeña */
 @media (max-width: 900px) {
-  .stats-grid {
+  .dashboard .stats-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: var(--space-3);
   }
@@ -585,17 +585,17 @@
     gap: var(--space-3);
   }
 
-  .stat-card {
+  .dashboard .stat-card {
     padding: var(--space-4);
   }
 
-  .stat-icon {
+  .dashboard .stat-icon {
     width: 40px;
     height: 40px;
     font-size: 18px;
   }
 
-  .stat-value {
+  .dashboard .stat-value {
     font-size: 1.25rem;
   }
 }
@@ -606,11 +606,11 @@
     gap: var(--space-4);
   }
 
-  .stats-grid {
+  .dashboard .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .ai-stats-grid {
+  .dashboard .ai-stats-grid {
     grid-template-columns: 1fr;
   }
 
@@ -626,7 +626,7 @@
 
 /* Móviles pequeños */
 @media (max-width: 500px) {
-  .stats-grid {
+  .dashboard .stats-grid {
     grid-template-columns: 1fr;
     gap: 10px;
   }
@@ -635,18 +635,18 @@
     gap: 10px;
   }
 
-  .stat-card,
+  .dashboard .stat-card,
   .dashboard-card {
     padding: 12px;
   }
 
-  .stat-icon {
+  .dashboard .stat-icon {
     width: 36px;
     height: 36px;
     font-size: 16px;
   }
 
-  .stat-value {
+  .dashboard .stat-value {
     font-size: 1.1rem;
   }
 

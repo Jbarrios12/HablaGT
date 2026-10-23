@@ -68,7 +68,7 @@
   height: 14px;
 }
 
-.call-indicator .pulse {
+.phone-trigger .call-indicator .pulse {
   position: absolute;
   width: 100%;
   height: 100%;
@@ -101,7 +101,7 @@
 /* Panel principal - responsive */
 .softphone-panel {
   height: 100%;
-  background: white;
+  background: var(--surface);
   border-left: 1px solid var(--color-gray-200);
   border-top-left-radius: var(--radius-xl);
   border-bottom-left-radius: var(--radius-xl);
@@ -123,7 +123,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px var(--sp-padding);
-  background: linear-gradient(135deg, var(--color-dark), var(--color-dark-light));
+  background: linear-gradient(135deg, var(--surface-inverse), var(--surface-inverse-2));
   color: white;
   flex-shrink: 0;
   gap: 10px;
@@ -173,7 +173,7 @@
   color: var(--color-accent);
 }
 
-.status-dot {
+.softphone-panel .status-dot {
   width: 6px;
   height: 6px;
   background: var(--color-accent);
@@ -276,11 +276,11 @@
   }
 }
 
-.call-info {
+.softphone-panel .call-info {
   text-align: center;
 }
 
-.call-number {
+.softphone-panel .call-number {
   display: block;
   font-size: 1.2rem;
   font-weight: 600;
@@ -361,7 +361,7 @@
   max-width: 180px;
   padding: 14px 24px;
   margin-top: 16px;
-  background: linear-gradient(135deg, var(--color-danger), #dc2626);
+  background: linear-gradient(135deg, var(--color-danger), var(--danger-strong));
   border: none;
   border-radius: var(--radius-full);
   color: white;
@@ -405,7 +405,7 @@
 
 .sp-display input:focus {
   border-color: var(--color-primary);
-  background: white;
+  background: var(--surface);
 }
 
 .sp-display input::placeholder {
@@ -456,8 +456,8 @@
 }
 
 .sp-tab.active {
-  background: var(--color-dark);
-  color: white;
+  background: var(--brand);
+  color: var(--text-on-brand);
 }
 
 /* Keypad - Responsive Grid con tamaño máximo */
@@ -545,17 +545,17 @@
   flex-shrink: 0;
 }
 
-.recent-icon.incoming {
+.softphone-panel .recent-icon.incoming {
   background: rgb(var(--color-accent-rgb) / 0.1);
   color: var(--color-accent);
 }
 
-.recent-icon.outgoing {
+.softphone-panel .recent-icon.outgoing {
   background: rgb(var(--color-primary-rgb) / 0.1);
   color: var(--color-primary);
 }
 
-.recent-icon.missed {
+.softphone-panel .recent-icon.missed {
   background: rgb(var(--color-danger-rgb) / 0.1);
   color: var(--color-danger);
 }
@@ -853,7 +853,7 @@
     inset: -12px;
   }
 
-  .call-number {
+  .softphone-panel .call-number {
     font-size: 1.1rem;
   }
 
@@ -1001,4 +1001,59 @@
     height: 48px;
     font-size: 18px;
   }
+}
+
+/* Agent status: only "Disponible" receives the campaign queue calls. */
+.sp-presence {
+  display: flex;
+  gap: 6px;
+  padding: 8px var(--sp-padding);
+  background: var(--color-gray-50, var(--surface-2));
+  border-bottom: 1px solid var(--color-gray-200, var(--border));
+  flex-shrink: 0;
+}
+
+.sp-presence-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 4px;
+  border: 1px solid var(--color-gray-200, var(--border));
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--color-gray-600, var(--text-secondary));
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.sp-presence-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+.sp-presence-btn.online { color: var(--success-text); }
+.softphone-panel .sp-presence-btn.busy { color: var(--warning-text); }
+.sp-presence-btn.offline { color: var(--danger-text); }
+
+.sp-presence-btn.active.online { background: var(--success-soft); border-color: var(--success); }
+.softphone-panel .sp-presence-btn.active.busy { background: var(--warning-soft); border-color: var(--warning); }
+.sp-presence-btn.active.offline { background: var(--danger-soft); border-color: var(--danger); }
+.sp-presence-btn.active .sp-presence-dot { opacity: 1; }
+
+/* Operadora IA: error al activar la IA en la llamada */
+.sp-ai-error {
+  width: 100%;
+  margin-top: 12px;
+  font-size: 0.75rem;
+  color: var(--color-danger);
+  background: rgb(var(--color-danger-rgb) / 0.08);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
 }

@@ -22,17 +22,6 @@
   align-items: center;
   gap: 14px;
 }
-
-.hablaphone-title .title-icon {
-  width: 48px;
-  height: 48px;
-  padding: 12px;
-  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-dark));
-  border-radius: var(--radius-lg);
-  color: white;
-  font-size: 24px;
-}
-
 .hablaphone-title h1 {
   margin: 0;
   font-size: 1.5rem;
@@ -56,7 +45,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--color-gray-200);
   border-radius: var(--radius-full);
   cursor: pointer;
@@ -95,7 +84,7 @@
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xl);
   padding: 8px;
@@ -136,7 +125,7 @@
 .hablaphone-tabs {
   display: flex;
   gap: 8px;
-  background: white;
+  background: var(--surface);
   padding: 8px;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
@@ -163,7 +152,7 @@
 }
 
 .tab-btn.active {
-  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-dark));
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
   color: white;
 }
 
@@ -173,7 +162,7 @@
 
 /* Contenido */
 .hablaphone-content {
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-xl);
   padding: 24px;
   border: var(--border-subtle);
@@ -217,8 +206,8 @@
 
 .numero-input:focus {
   outline: none;
-  border-color: var(--color-accent);
-  background: white;
+  border-color: var(--brand);
+  background: var(--surface);
 }
 
 .numero-input::placeholder {
@@ -264,7 +253,7 @@
   justify-content: center;
   padding: 16px;
   border: 1px solid var(--color-gray-200);
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-lg);
   cursor: pointer;
   transition: all 0.2s;
@@ -273,11 +262,11 @@
 
 .tecla:hover {
   background: var(--color-gray-100);
-  border-color: var(--color-accent);
+  border-color: var(--brand);
 }
 
 .tecla:active {
-  background: var(--color-accent);
+  background: var(--brand);
   color: white;
   transform: scale(0.95);
 }
@@ -342,7 +331,7 @@
   justify-content: center;
   gap: 10px;
   padding: 16px 48px;
-  background: linear-gradient(135deg, var(--color-danger), #dc2626);
+  background: linear-gradient(135deg, var(--color-danger), var(--danger-strong));
   color: white;
   border: none;
   border-radius: var(--radius-full);
@@ -370,7 +359,7 @@
   align-items: center;
   gap: 24px;
   padding: var(--space-6);
-  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  background: linear-gradient(135deg, var(--success-soft), var(--success-soft));
   border-radius: var(--radius-xl);
   text-align: center;
 }
@@ -391,10 +380,10 @@
   height: 10px;
   background: var(--color-accent);
   border-radius: 50%;
-  animation: pulse 1.5s infinite;
+  animation: hablaphone-pulse 1.5s infinite;
 }
 
-@keyframes pulse {
+@keyframes hablaphone-pulse {
   0% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.2); opacity: 0.5; }
   100% { transform: scale(1); opacity: 1; }
@@ -437,7 +426,7 @@
   align-items: center;
   gap: 8px;
   padding: 8px 20px;
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-full);
   color: var(--color-dark);
   font-size: 1.5rem;
@@ -457,7 +446,7 @@
   gap: 6px;
   padding: 16px 20px;
   border: none;
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-lg);
   color: var(--color-gray-500);
   cursor: pointer;
@@ -511,7 +500,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: white;
+  background: var(--surface);
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s;
@@ -531,12 +520,12 @@
   font-size: 18px;
 }
 
-.reciente-icon.entrante {
+.hablaphone .reciente-icon.entrante {
   background: rgb(var(--color-accent-rgb) / 0.1);
   color: var(--color-accent);
 }
 
-.reciente-icon.saliente {
+.hablaphone .reciente-icon.saliente {
   background: rgb(var(--color-secondary-rgb) / 0.1);
   color: var(--color-secondary);
 }
@@ -632,13 +621,13 @@
   gap: 8px;
 }
 
-.historial-filtros .filtro-btn {
+.hablaphone .historial-filtros .filtro-btn {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 10px 16px;
   border: 1px solid var(--color-gray-200);
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-sm);
   font-size: 0.85rem;
   color: var(--color-gray-500);
@@ -646,14 +635,14 @@
   transition: all 0.2s;
 }
 
-.historial-filtros .filtro-btn:hover {
-  border-color: var(--color-accent);
-  color: var(--color-accent);
+.hablaphone .historial-filtros .filtro-btn:hover {
+  border-color: var(--brand);
+  color: var(--brand-text);
 }
 
-.historial-filtros .filtro-btn.active {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
+.hablaphone .historial-filtros .filtro-btn.active {
+  background: var(--brand);
+  border-color: var(--brand);
   color: white;
 }
 
@@ -664,7 +653,7 @@
   overflow: hidden;
 }
 
-.tabla-header {
+.hablaphone .tabla-header {
   display: grid;
   grid-template-columns: 60px 1fr 150px 100px 80px 80px 100px;
   gap: 16px;
@@ -699,7 +688,7 @@
   border-bottom: none;
 }
 
-.tipo-badge {
+.hablaphone .tipo-badge {
   width: 36px;
   height: 36px;
   border-radius: var(--radius-sm);
@@ -708,17 +697,17 @@
   justify-content: center;
 }
 
-.tipo-badge.entrante {
+.hablaphone .tipo-badge.entrante {
   background: rgb(var(--color-accent-rgb) / 0.1);
   color: var(--color-accent);
 }
 
-.tipo-badge.saliente {
+.hablaphone .tipo-badge.saliente {
   background: rgb(var(--color-secondary-rgb) / 0.1);
   color: var(--color-secondary);
 }
 
-.tipo-badge.perdida {
+.hablaphone .tipo-badge.perdida {
   background: rgb(var(--color-danger-rgb) / 0.1);
   color: var(--color-danger);
 }
@@ -741,7 +730,7 @@
   color: var(--color-gray-500);
 }
 
-.duracion-cell {
+.hablaphone .duracion-cell {
   font-family: 'Monaco', 'Menlo', monospace;
   color: var(--color-dark);
 }
@@ -818,7 +807,7 @@
 }
 
 .periodo-selector button.active {
-  background: white;
+  background: var(--surface);
   color: var(--color-dark);
   box-shadow: var(--shadow-sm);
 }
@@ -829,7 +818,7 @@
   gap: 8px;
   padding: 10px 16px;
   border: 1px solid var(--color-gray-200);
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-sm);
   font-size: 0.85rem;
   color: var(--color-gray-500);
@@ -838,35 +827,35 @@
 }
 
 .btn-refresh:hover {
-  border-color: var(--color-accent);
-  color: var(--color-accent);
+  border-color: var(--brand);
+  color: var(--brand-text);
 }
 
 /* Grid de stats */
-.stats-grid {
+.hablaphone .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
 }
 
-.stat-card {
+.hablaphone .stat-card {
   display: flex;
   align-items: center;
   gap: 16px;
   padding: 20px;
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-xl);
   border: var(--border-subtle);
   box-shadow: var(--shadow-sm);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.stat-card:hover {
+.hablaphone .stat-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
 
-.stat-icon {
+.hablaphone .stat-icon {
   width: 56px;
   height: 56px;
   border-radius: var(--radius-lg);
@@ -876,32 +865,32 @@
   font-size: 24px;
 }
 
-.stat-card.salientes .stat-icon {
+.hablaphone .stat-card.salientes .stat-icon {
   background: rgb(var(--color-secondary-rgb) / 0.1);
   color: var(--color-secondary);
 }
 
-.stat-card.entrantes .stat-icon {
+.hablaphone .stat-card.entrantes .stat-icon {
   background: rgb(var(--color-accent-rgb) / 0.1);
   color: var(--color-accent);
 }
 
-.stat-card.perdidas .stat-icon {
+.hablaphone .stat-card.perdidas .stat-icon {
   background: rgb(var(--color-danger-rgb) / 0.1);
   color: var(--color-danger);
 }
 
-.stat-card.tiempo .stat-icon {
+.hablaphone .stat-card.tiempo .stat-icon {
   background: rgb(var(--color-warning-rgb) / 0.1);
   color: var(--color-warning);
 }
 
-.stat-card.promedio .stat-icon {
+.hablaphone .stat-card.promedio .stat-icon {
   background: rgb(var(--color-primary-rgb) / 0.1);
   color: var(--color-primary);
 }
 
-.stat-card.tasa .stat-icon {
+.hablaphone .stat-card.tasa .stat-icon {
   background: rgb(var(--color-secondary-light-rgb) / 0.1);
   color: var(--color-secondary-light);
 }
@@ -918,7 +907,7 @@
   color: var(--color-dark);
 }
 
-.stat-label {
+.hablaphone .stat-label {
   font-size: 0.8rem;
   color: var(--color-gray-500);
 }
@@ -984,7 +973,7 @@
 }
 
 .config-section h3 svg {
-  color: var(--color-accent);
+  color: var(--brand-text);
 }
 
 .config-group {
@@ -1000,7 +989,7 @@
   gap: 6px;
   font-size: 0.85rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--text-secondary);
 }
 
 .config-group label svg {
@@ -1015,14 +1004,14 @@
   border-radius: var(--radius-sm);
   font-size: 0.9rem;
   color: var(--color-dark);
-  background: white;
+  background: var(--surface);
   transition: all 0.2s;
 }
 
 .config-group input:focus,
 .config-group select:focus {
   outline: none;
-  border-color: var(--color-accent);
+  border-color: var(--brand);
 }
 
 .config-group input:disabled {
@@ -1050,9 +1039,9 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: var(--color-accent);
+  background: var(--brand);
   cursor: pointer;
-  box-shadow: 0 2px 6px rgb(var(--color-accent-rgb) / 0.3);
+  box-shadow: 0 2px 6px rgb(var(--brand-rgb) / 0.3);
 }
 
 .volume-control span {
@@ -1069,18 +1058,18 @@
   gap: 8px;
   width: 100%;
   padding: 12px;
-  border: 1px solid var(--color-accent);
-  background: white;
+  border: 1px solid var(--brand);
+  background: var(--surface);
   border-radius: var(--radius-sm);
   font-size: 0.9rem;
   font-weight: 500;
-  color: var(--color-accent);
+  color: var(--brand-text);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .btn-test-audio:hover {
-  background: var(--color-accent);
+  background: var(--brand);
   color: white;
 }
 
@@ -1144,13 +1133,13 @@
   width: 20px;
   left: 3px;
   bottom: 3px;
-  background: white;
+  background: var(--surface);
   transition: 0.3s;
   border-radius: 50%;
 }
 
 .switch input:checked + .slider {
-  background: var(--color-accent);
+  background: var(--brand);
 }
 
 .switch input:checked + .slider:before {
@@ -1163,7 +1152,7 @@
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-full);
   margin-bottom: 16px;
   font-weight: 500;
@@ -1178,31 +1167,8 @@
   height: 10px;
   border-radius: 50%;
   background: currentColor;
-  animation: pulse 2s infinite;
+  animation: hablaphone-pulse 2s infinite;
 }
-
-.btn-secondary {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 12px;
-  border: 1px solid var(--color-gray-200);
-  background: white;
-  border-radius: var(--radius-sm);
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--color-gray-500);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-secondary:hover {
-  border-color: var(--color-secondary);
-  color: var(--color-secondary);
-}
-
 /* ========================================
    Responsive
 ======================================== */
@@ -1211,13 +1177,13 @@
     grid-template-columns: 1fr;
   }
 
-  .tabla-header,
+  .hablaphone .tabla-header,
   .tabla-row {
     grid-template-columns: 50px 1fr 100px 80px;
   }
 
-  .tabla-header span:nth-child(3),
-  .tabla-header span:nth-child(5),
+  .hablaphone .tabla-header span:nth-child(3),
+  .hablaphone .tabla-header span:nth-child(5),
   .tabla-row span:nth-child(3),
   .tabla-row span:nth-child(5) {
     display: none;
@@ -1252,14 +1218,14 @@
     padding: 16px;
   }
 
-  .tabla-header,
+  .hablaphone .tabla-header,
   .tabla-row {
     grid-template-columns: 40px 1fr 80px;
   }
 
-  .tabla-header span:nth-child(3),
-  .tabla-header span:nth-child(4),
-  .tabla-header span:nth-child(5),
+  .hablaphone .tabla-header span:nth-child(3),
+  .hablaphone .tabla-header span:nth-child(4),
+  .hablaphone .tabla-header span:nth-child(5),
   .tabla-row span:nth-child(3),
   .tabla-row span:nth-child(4),
   .tabla-row span:nth-child(5) {
@@ -1281,7 +1247,7 @@
     padding-bottom: 8px;
   }
 
-  .stats-grid {
+  .hablaphone .stats-grid {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -1299,3 +1265,6 @@
     padding: 12px 16px;
   }
 }
+
+/* Botón "Reconectar" de la configuración SIP: ocupa todo el ancho. */
+.hablaphone .btn-secondary { width: 100%; }

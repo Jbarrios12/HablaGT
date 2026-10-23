@@ -918,7 +918,7 @@ const ModalEvento = ({ isOpen, modo, data, tiposEvento, onClose, onSave }) => {
                 <ContactAutocomplete
                   value={form.contacto}
                   onChange={(contacto) => setForm({ ...form, contacto })}
-                  onSelect={(c) => setForm({ ...form, contacto: c.nombre, telefono: c.telefono_principal || form.telefono })}
+                  onSelect={(c) => setForm({ ...form, contacto: c.nombre, telefono: c.telefono_principal || c.telefono_movil || c.telefono_trabajo || form.telefono })}
                   placeholder="Nombre del contacto"
                 />
               </div>
@@ -926,13 +926,16 @@ const ModalEvento = ({ isOpen, modo, data, tiposEvento, onClose, onSave }) => {
               <div className="form-group">
                 <label>
                   <FiPhone />
-                  Teléfono
+                  Teléfono *
                 </label>
                 <input
                   type="tel"
                   value={form.telefono}
                   onChange={(e) => setForm({ ...form, telefono: e.target.value })}
                   placeholder="+502 5555-1234"
+                  required
+                  pattern="(?:\D*\d){4,}\D*"
+                  title="Al menos 4 dígitos. Con este número la IA reconoce al cliente cuando llama."
                 />
               </div>
             </div>

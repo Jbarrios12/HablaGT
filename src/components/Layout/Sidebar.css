@@ -4,7 +4,7 @@
 
 .sidebar {
   height: 100vh;
-  background: linear-gradient(180deg, var(--color-dark) 0%, var(--color-dark-light) 100%);
+  background: linear-gradient(180deg, var(--sidebar-bg) 0%, var(--sidebar-bg-2) 100%);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -178,7 +178,7 @@
   background: transparent;
   border: 1px solid rgb(var(--color-danger-rgb) / 0.2);
   border-radius: var(--radius-md);
-  color: #f87171;
+  color: var(--danger);
   cursor: pointer;
   transition: all 0.2s;
 }

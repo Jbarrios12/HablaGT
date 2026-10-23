@@ -8,19 +8,35 @@ import {
   FiSettings,
   FiLogOut,
   FiPhone,
-  FiMenu
+  FiMenu,
+  FiMoon,
+  FiSun
 } from 'react-icons/fi';
 import { notificationService } from '../../services';
+import { PRESENCE_OPTIONS, usePresence } from '../../hooks/usePresence';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import './Header.css';
 
 const Header = ({ title, onMenuClick }) => {
   const { user, logout } = useAuth();
+  const { resolved: theme, toggleMode } = useTheme();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef(null);
+  const presenceRef = useRef(null);
+  const [showPresence, setShowPresence] = useState(false);
+  const { presence, current: currentPresence, changePresence } = usePresence();
+
+  useEffect(() => {
+    const onClick = (e) => {
+      if (presenceRef.current && !presenceRef.current.contains(e.target)) setShowPresence(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, []);
 
   const loadNotifications = async () => {
     try {
@@ -96,18 +112,52 @@ const Header = ({ title, onMenuClick }) => {
       </div>
 
       <div className="header-center">
-        <div className="search-box">
+        <div className="header-search">
           <FiSearch className="search-icon" />
           <input type="text" placeholder="Buscar..." />
         </div>
       </div>
 
       <div className="header-right">
-        {/* Estado del teléfono */}
-        <div className="phone-status online">
-          <FiPhone />
-          <span>Disponible</span>
+        {/* Estado del agente (recibe transferencias solo si está Disponible) */}
+        <div className="presence-wrap" ref={presenceRef}>
+          <button
+            type="button"
+            className={`phone-status ${currentPresence.css}`}
+            onClick={() => setShowPresence((v) => !v)}
+            title="Cambiar mi estado"
+          >
+            <FiPhone />
+            <span>{currentPresence.label}</span>
+            <FiChevronDown />
+          </button>
+          {showPresence && (
+            <div className="presence-menu">
+              {PRESENCE_OPTIONS.map((o) => (
+                <button
+                  type="button"
+                  key={o.value}
+                  className={`presence-option ${o.value === presence ? 'active' : ''}`}
+                  onClick={() => { setShowPresence(false); changePresence(o.value); }}
+                >
+                  <span className={`presence-dot ${o.css}`} />
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+
+        {/* Tema claro / oscuro (más opciones en Configuración → General) */}
+        <button
+          type="button"
+          className="icon-btn theme-toggle"
+          onClick={toggleMode}
+          title={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+          aria-label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+        >
+          {theme === 'dark' ? <FiSun /> : <FiMoon />}
+        </button>
 
         {/* Notificaciones */}
         <div className="header-dropdown" ref={dropdownRef}>

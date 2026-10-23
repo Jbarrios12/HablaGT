@@ -26,7 +26,7 @@
   position: relative;
   background:
     radial-gradient(circle at 1px 1px, rgb(var(--color-white-rgb) / 0.06) 1px, transparent 0) 0 0 / 28px 28px,
-    linear-gradient(160deg, #060912 0%, var(--color-dark) 45%, #161b30 100%);
+    linear-gradient(160deg, #060912 0%, #0f172a 45%, #161b30 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -158,35 +158,35 @@
   pointer-events: none;
 }
 
-.ai-ring {
+.login-wrapper .ai-ring {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   border: 1px solid rgb(var(--color-primary-rgb) / 0.3);
-  animation: ringPulse 3s ease-out infinite;
+  animation: login-ring-pulse 3s ease-out infinite;
 }
 
-.ring-1 {
+.login-wrapper .ring-1 {
   width: 120px;
   height: 120px;
   animation-delay: 0s;
 }
 
-.ring-2 {
+.login-wrapper .ring-2 {
   width: 180px;
   height: 180px;
   animation-delay: 0.5s;
 }
 
-.ring-3 {
+.login-wrapper .ring-3 {
   width: 240px;
   height: 240px;
   animation-delay: 1s;
 }
 
-@keyframes ringPulse {
+@keyframes login-ring-pulse {
   0% {
     transform: translate(-50%, -50%) scale(0.8);
     opacity: 0.8;
@@ -472,7 +472,7 @@
 }
 
 /* Form Groups */
-.form-group {
+.login-wrapper .form-group {
   position: relative;
 }
 
@@ -482,7 +482,7 @@
   align-items: center;
 }
 
-.input-icon {
+.login-wrapper .input-icon {
   position: absolute;
   left: 16px;
   font-size: 20px;
@@ -491,7 +491,7 @@
   pointer-events: none;
 }
 
-.form-group input {
+.login-wrapper .form-group input {
   width: 100%;
   padding: 15px 16px 15px 52px;
   font-size: 0.975rem;
@@ -504,36 +504,36 @@
   transition: all 0.2s ease;
 }
 
-.form-group input::placeholder {
+.login-wrapper .form-group input::placeholder {
   color: var(--color-gray-400);
   opacity: 1;
 }
 
-.form-group input:-webkit-autofill,
-.form-group input:-webkit-autofill:hover,
-.form-group input:-webkit-autofill:focus {
+.login-wrapper .form-group input:-webkit-autofill,
+.login-wrapper .form-group input:-webkit-autofill:hover,
+.login-wrapper .form-group input:-webkit-autofill:focus {
   -webkit-box-shadow: 0 0 0 1000px var(--color-white) inset !important;
   -webkit-text-fill-color: var(--color-gray-900) !important;
   padding-left: 52px !important;
 }
 
-.form-group input:hover {
+.login-wrapper .form-group input:hover {
   border-color: var(--color-gray-300);
 }
 
-.form-group input:focus {
+.login-wrapper .form-group input:focus {
   border-color: var(--color-primary);
   background: var(--color-white);
   box-shadow: 0 0 0 4px rgb(var(--color-primary-rgb) / 0.12), var(--shadow-md);
 }
 
-.form-group.focused .input-icon,
-.form-group.has-value .input-icon {
+.login-wrapper .form-group.focused .input-icon,
+.login-wrapper .form-group.has-value .input-icon {
   color: var(--color-primary);
 }
 
 /* Toggle password */
-.toggle-password {
+.login-wrapper .toggle-password {
   position: absolute;
   right: 16px;
   background: none;
@@ -548,7 +548,7 @@
   transition: color 0.2s ease;
 }
 
-.toggle-password:hover {
+.login-wrapper .toggle-password:hover {
   color: var(--color-gray-600);
 }
 
@@ -732,15 +732,15 @@
   color: var(--color-gray-400);
 }
 
-.status-dot {
+.login-wrapper .status-dot {
   width: 8px;
   height: 8px;
   background: var(--color-accent);
   border-radius: 50%;
-  animation: pulse 2s ease-in-out infinite;
+  animation: login-pulse 2s ease-in-out infinite;
 }
 
-@keyframes pulse {
+@keyframes login-pulse {
   0%, 100% {
     opacity: 1;
     box-shadow: 0 0 0 0 rgb(var(--color-accent-rgb) / 0.4);
@@ -785,7 +785,7 @@
     font-size: 1.5rem;
   }
 
-  .form-group input {
+  .login-wrapper .form-group input {
     padding: 14px 14px 14px 48px;
   }
 

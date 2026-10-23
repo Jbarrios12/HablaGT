@@ -4,7 +4,7 @@
 
 .header {
   height: 72px;
-  background: white;
+  background: var(--surface);
   box-shadow: var(--shadow-sm);
   display: flex;
   align-items: center;
@@ -41,7 +41,7 @@
   justify-content: center;
 }
 
-.search-box {
+.header-search {
   position: relative;
   width: 100%;
   max-width: 400px;
@@ -56,7 +56,7 @@
   font-size: 18px;
 }
 
-.search-box input {
+.header-search input {
   width: 100%;
   padding: 10px 16px 10px 44px;
   background: var(--color-gray-100);
@@ -68,12 +68,12 @@
   transition: all 0.2s;
 }
 
-.search-box input::placeholder {
+.header-search input::placeholder {
   color: var(--color-gray-400);
 }
 
-.search-box input:focus {
-  background: white;
+.header-search input:focus {
+  background: var(--surface);
   border-color: var(--color-primary);
   box-shadow: 0 0 0 4px rgb(var(--color-primary-rgb) / 0.1);
 }
@@ -112,6 +112,59 @@
   background: rgb(var(--color-warning-rgb) / 0.1);
   color: var(--color-warning);
 }
+
+.presence-wrap {
+  position: relative;
+}
+
+button.phone-status {
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.presence-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 50;
+  min-width: 160px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.12);
+}
+
+.presence-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-gray-700);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.presence-option:hover,
+.presence-option.active {
+  background: var(--color-gray-100);
+}
+
+.presence-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.presence-dot.online { background: var(--color-accent); }
+.presence-dot.busy { background: var(--color-warning); }
+.presence-dot.offline { background: var(--color-danger); }
 
 /* Icon button */
 .icon-btn {
@@ -216,7 +269,7 @@
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xl);
   overflow: hidden;

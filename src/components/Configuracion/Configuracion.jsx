@@ -24,6 +24,9 @@ import {
   FiUserCheck,
   FiAlertCircle
 } from 'react-icons/fi';
+import AppearanceSettings from './AppearanceSettings';
+import ReminderSettings from './ReminderSettings';
+import { useModules } from '../../context/ModulesContext';
 import './Configuracion.css';
 
 // Datos de ejemplo - Extensiones
@@ -48,6 +51,7 @@ const agentesData = [
 const Configuracion = () => {
   const { showLoading, hideLoading } = useLoading();
   const toast = useToast();
+  const { has: hasModule } = useModules();
   const [tabActiva, setTabActiva] = useState('extensiones');
   const [busqueda, setBusqueda] = useState('');
 
@@ -129,7 +133,7 @@ const Configuracion = () => {
               freepbx_enabled: integ?.freepbx?.enabled || false,
               freepbx_provider: integ?.freepbx?.provider || 'self',
               freepbx_base_url: integ?.freepbx?.base_url || '',
-              freepbx_username: '',
+              freepbx_username: integ?.freepbx?.username || '',
               freepbx_password: '',
               freepbx_api_token: '',
               freepbx_recordings_url: integ?.freepbx?.recordings_url || '',
@@ -335,12 +339,13 @@ const Configuracion = () => {
       setIntegration(updated);
       setIntegrationForm((prev) => ({
         ...prev,
-        freepbx_username: '',
+        freepbx_username: updated?.freepbx?.username || prev.freepbx_username,
         freepbx_password: '',
         freepbx_api_token: '',
         voiceai_api_key: '',
         ai_brain_api_key: '',
       }));
+      toast.success('Integraciones guardadas');
     } catch (err) {
       toast.error('Error guardando integración: ' + (err?.response?.data?.error?.message || err.message));
     } finally {
@@ -404,7 +409,7 @@ const Configuracion = () => {
             }}
           >
             <FiPlus />
-            <span>Nuevo {tabActiva === 'extensiones' ? 'Extensión' : 'Agente'}</span>
+            <span>{tabActiva === 'extensiones' ? 'Nueva extensión' : 'Nuevo agente'}</span>
           </button>
         </div>
       )}
@@ -709,8 +714,8 @@ const Configuracion = () => {
                 </div>
                 {integration?.voice_ai && (
                   <div className="cred-status">
-                    <span className={integration.voice_ai.has_key ? 'ok' : 'missing'}>
-                      API Key: {integration.voice_ai.has_key ? 'configurada' : 'falta'}
+                    <span className={integration.voice_ai.has_api_key ? 'ok' : 'missing'}>
+                      API Key: {integration.voice_ai.has_api_key ? 'configurada' : 'falta'}
                     </span>
                   </div>
                 )}
@@ -723,14 +728,14 @@ const Configuracion = () => {
                   >
                     <option value="stub">Stub (dev)</option>
                     <option value="elevenlabs">ElevenLabs</option>
-                    <option value="openai">OpenAI Realtime</option>
+                    <option value="openai-realtime">OpenAI</option>
                     <option value="cartesia">Cartesia</option>
-                    <option value="vapi">VAPI</option>
-                    <option value="retell">Retell</option>
+                    <option value="vapi" disabled>VAPI (próximamente)</option>
+                    <option value="retell" disabled>Retell (próximamente)</option>
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>API Key {integration?.voice_ai?.has_key && <span className="hint">(dejar vacío para conservar)</span>}</label>
+                  <label>API Key {integration?.voice_ai?.has_api_key && <span className="hint">(dejar vacío para conservar)</span>}</label>
                   <input
                     type="password"
                     placeholder="sk_..."
@@ -774,14 +779,14 @@ const Configuracion = () => {
                 <div className="card-header-row">
                   <h3>Cerebro IA (LangChain + CrewAI)</h3>
                 </div>
-                <p>
-                  Motor de razonamiento que decide qué dice y hace la Operadora IA (agendar, confirmar o cancelar
-                  citas). Es independiente del proveedor de voz de arriba: ese solo convierte voz a texto y texto a voz.
+                <p className="help-text integ-desc">
+                  Motor de razonamiento que decide qué dice y hace la Operadora IA (entender lo que piden, consultar
+                  y usar tus herramientas). Es independiente del proveedor de voz de arriba: ese solo convierte voz a texto y texto a voz.
                 </p>
                 {integrationForm.ai_brain_provider && (
                   <div className="cred-status">
-                    <span className={integration?.ai_brain?.has_key ? 'ok' : 'missing'}>
-                      API Key: {integration?.ai_brain?.has_key ? 'configurada' : 'falta'}
+                    <span className={integration?.ai_brain?.has_api_key ? 'ok' : 'missing'}>
+                      API Key: {integration?.ai_brain?.has_api_key ? 'configurada' : 'falta'}
                     </span>
                   </div>
                 )}
@@ -799,7 +804,7 @@ const Configuracion = () => {
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>API Key {integration?.ai_brain?.has_key && <span className="hint">(dejar vacío para conservar)</span>}</label>
+                  <label>API Key {integration?.ai_brain?.has_api_key && <span className="hint">(dejar vacío para conservar)</span>}</label>
                   <input
                     type="password"
                     placeholder="sk_..."
@@ -847,6 +852,8 @@ const Configuracion = () => {
             className="config-content"
           >
             <div className="general-settings">
+              <AppearanceSettings />
+              {hasModule('citas') && <ReminderSettings />}
               <div className="setting-card">
                 <h3>Configuración del Tenant</h3>
                 <div className="form-group" style={{ marginTop: '1rem' }}>

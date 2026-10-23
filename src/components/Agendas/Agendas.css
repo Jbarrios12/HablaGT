@@ -22,17 +22,6 @@
   align-items: center;
   gap: 14px;
 }
-
-.agendas-title .title-icon {
-  width: 48px;
-  height: 48px;
-  padding: 12px;
-  background: linear-gradient(135deg, var(--color-secondary), var(--color-secondary-light));
-  border-radius: var(--radius-md);
-  color: white;
-  font-size: 24px;
-}
-
 .agendas-title h1 {
   margin: 0;
   font-size: 1.5rem;
@@ -52,15 +41,15 @@
   align-items: center;
 }
 
-.vista-toggle {
+.agendas .vista-toggle {
   display: flex;
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-sm);
   padding: 4px;
   box-shadow: var(--shadow-sm);
 }
 
-.vista-toggle button {
+.agendas .vista-toggle button {
   padding: 8px 12px;
   border: none;
   background: transparent;
@@ -72,51 +61,10 @@
   align-items: center;
 }
 
-.vista-toggle button.active {
-  background: var(--color-secondary);
+.agendas .vista-toggle button.active {
+  background: var(--brand);
   color: white;
 }
-
-.btn-primary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  background: linear-gradient(135deg, var(--color-secondary), var(--color-secondary-light));
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgb(var(--color-secondary-rgb) / 0.4);
-}
-
-.btn-secondary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  background: var(--color-gray-100);
-  color: var(--color-gray-500);
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-secondary:hover {
-  background: var(--color-gray-200);
-  color: var(--color-dark);
-}
-
 /* Filtros */
 .agendas-filtros {
   display: flex;
@@ -124,13 +72,13 @@
   flex-wrap: wrap;
 }
 
-.filtro-btn {
+.agendas .filtro-btn {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
   border: 1px solid var(--color-gray-200);
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-sm);
   font-size: 0.85rem;
   color: var(--color-gray-500);
@@ -138,18 +86,18 @@
   transition: all 0.2s;
 }
 
-.filtro-btn:hover {
-  border-color: var(--filtro-color, var(--color-secondary));
-  color: var(--filtro-color, var(--color-secondary));
+.agendas .filtro-btn:hover {
+  border-color: var(--filtro-color, var(--brand));
+  color: var(--filtro-color, var(--brand-text));
 }
 
-.filtro-btn.active {
-  background: var(--filtro-color, var(--color-secondary));
-  border-color: var(--filtro-color, var(--color-secondary));
+.agendas .filtro-btn.active {
+  background: var(--filtro-color, var(--brand));
+  border-color: var(--filtro-color, var(--brand));
   color: white;
 }
 
-.filtro-btn svg {
+.agendas .filtro-btn svg {
   font-size: 14px;
 }
 
@@ -157,7 +105,7 @@
   width: 36px;
   height: 36px;
   border: 1px solid var(--color-gray-200);
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-sm);
   color: var(--color-gray-500);
   cursor: pointer;
@@ -169,8 +117,8 @@
 }
 
 .btn-config-tipos:hover {
-  border-color: var(--color-secondary);
-  color: var(--color-secondary);
+  border-color: var(--brand);
+  color: var(--brand-text);
 }
 
 /* Layout */
@@ -196,7 +144,7 @@
    Calendario
 ======================================== */
 .calendario-container {
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-xl);
   padding: 16px;
   border: var(--border-subtle);
@@ -225,7 +173,7 @@
   width: 36px;
   height: 36px;
   border: 1px solid var(--color-gray-200);
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-sm);
   color: var(--color-gray-500);
   cursor: pointer;
@@ -236,14 +184,14 @@
 }
 
 .nav-btn:hover {
-  border-color: var(--color-secondary);
-  color: var(--color-secondary);
+  border-color: var(--brand);
+  color: var(--brand-text);
 }
 
 .btn-hoy {
   padding: 8px 16px;
   border: 1px solid var(--color-gray-200);
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-sm);
   font-size: 0.85rem;
   color: var(--color-gray-500);
@@ -253,8 +201,8 @@
 }
 
 .btn-hoy:hover {
-  border-color: var(--color-secondary);
-  color: var(--color-secondary);
+  border-color: var(--brand);
+  color: var(--brand-text);
 }
 
 .calendario {
@@ -330,19 +278,20 @@
 }
 
 .dia-cell.otro-mes {
-  background: #fafafa;
+  background: var(--surface-2);
 }
 
 .dia-cell.otro-mes .dia-numero {
-  color: var(--color-gray-300);
+  color: var(--text-subtle);
+  opacity: 0.6;
 }
 
 .dia-cell.hoy {
-  background: rgb(var(--color-secondary-rgb) / 0.05);
+  background: rgb(var(--brand-rgb) / 0.05);
 }
 
 .dia-cell.hoy .dia-numero {
-  background: var(--color-secondary);
+  background: var(--brand);
   color: white;
 }
 
@@ -414,7 +363,7 @@
    Lista de Eventos
 ======================================== */
 .lista-container {
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-xl);
   padding: 20px;
   border: var(--border-subtle);
@@ -479,9 +428,9 @@
   box-shadow: var(--shadow-md);
 }
 
-.evento-card.selected {
-  border-color: var(--color-secondary);
-  background: rgb(var(--color-secondary-rgb) / 0.05);
+.agendas .evento-card.selected {
+  border-color: var(--brand);
+  background: rgb(var(--brand-rgb) / 0.05);
 }
 
 .evento-card.completado {
@@ -542,7 +491,7 @@
   gap: 8px;
 }
 
-.btn-call-sm {
+.agendas .btn-call-sm {
   width: 36px;
   height: 36px;
   border: none;
@@ -556,7 +505,7 @@
   transition: all 0.2s;
 }
 
-.btn-call-sm:hover {
+.agendas .btn-call-sm:hover {
   transform: scale(1.05);
   box-shadow: 0 2px 8px rgb(var(--color-accent-rgb) / 0.4);
 }
@@ -566,7 +515,7 @@
   height: 36px;
   border: 2px solid var(--color-gray-200);
   border-radius: var(--radius-sm);
-  background: white;
+  background: var(--surface);
   color: var(--color-gray-400);
   cursor: pointer;
   display: flex;
@@ -595,7 +544,7 @@
   top: 0;
   height: 100%;
   width: 280px;
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-xl);
   border: var(--border-subtle);
   box-shadow: var(--shadow-sm);
@@ -604,7 +553,7 @@
   overflow: hidden;
 }
 
-.detalle-header {
+.agendas .detalle-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -633,44 +582,10 @@
   color: var(--color-danger);
 }
 
-.detalle-actions {
+.agendas .detalle-actions {
   display: flex;
   gap: 8px;
 }
-
-.btn-icon {
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
-
-.btn-icon.edit {
-  background: rgb(var(--color-primary-rgb) / 0.1);
-  color: var(--color-primary);
-}
-
-.btn-icon.edit:hover {
-  background: var(--color-primary);
-  color: white;
-}
-
-.btn-icon.delete {
-  background: rgb(var(--color-danger-rgb) / 0.1);
-  color: var(--color-danger);
-}
-
-.btn-icon.delete:hover {
-  background: var(--color-danger);
-  color: white;
-}
-
 .detalle-content {
   padding: 16px;
   display: flex;
@@ -735,17 +650,17 @@
 }
 
 .info-item svg {
-  color: var(--color-secondary);
+  color: var(--brand-text);
   flex-shrink: 0;
   font-size: 14px;
 }
 
-.detalle-section {
+.agendas .detalle-section {
   border-top: 1px solid var(--color-gray-100);
   padding-top: 14px;
 }
 
-.detalle-section h4 {
+.agendas .detalle-section h4 {
   margin: 0 0 8px;
   font-size: 0.7rem;
   font-weight: 600;
@@ -754,7 +669,7 @@
   letter-spacing: 0.5px;
 }
 
-.detalle-section p {
+.agendas .detalle-section p {
   margin: 0;
   font-size: 0.85rem;
   color: var(--color-dark);
@@ -762,7 +677,7 @@
   word-wrap: break-word;
 }
 
-.contacto-info {
+.agendas .contacto-info {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -778,23 +693,23 @@
 }
 
 .contacto-nombre svg {
-  color: var(--color-secondary);
+  color: var(--brand-text);
   flex-shrink: 0;
 }
 
-.contacto-telefono {
+.agendas .contacto-telefono {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.contacto-telefono span {
+.agendas .contacto-telefono span {
   font-size: 0.85rem;
   color: var(--color-gray-500);
   font-family: 'Monaco', 'Menlo', monospace;
 }
 
-.btn-call {
+.agendas .btn-call {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -811,7 +726,7 @@
   width: 100%;
 }
 
-.btn-call:hover {
+.agendas .btn-call:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgb(var(--color-accent-rgb) / 0.4);
 }
@@ -836,7 +751,7 @@
   width: 100%;
   padding: 12px;
   border: 2px solid var(--color-gray-200);
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-md);
   font-size: 0.85rem;
   font-weight: 500;
@@ -859,148 +774,6 @@
   border-color: var(--color-accent);
   color: white;
 }
-
-/* Empty State */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  color: var(--color-gray-400);
-}
-
-.empty-state svg {
-  font-size: 48px;
-  margin-bottom: 16px;
-  opacity: 0.5;
-}
-
-/* ========================================
-   Modal Evento
-======================================== */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgb(var(--color-dark-rgb) / 0.6);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-.modal-content {
-  background: white;
-  border-radius: var(--radius-xl);
-  width: 100%;
-  max-width: 520px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: var(--shadow-xl);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--color-gray-200);
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--color-dark);
-}
-
-.modal-close {
-  width: 36px;
-  height: 36px;
-  border: none;
-  background: var(--color-gray-100);
-  border-radius: var(--radius-sm);
-  color: var(--color-gray-500);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.modal-close:hover {
-  background: var(--color-gray-200);
-  color: var(--color-danger);
-}
-
-.modal-form {
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-}
-
-.form-group label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #374151;
-}
-
-.form-group label svg {
-  font-size: 16px;
-  color: var(--color-secondary);
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-  width: 100%;
-  min-width: 0;
-  padding: 12px 14px;
-  border: 1px solid var(--color-gray-200);
-  border-radius: var(--radius-sm);
-  font-size: 0.9rem;
-  color: var(--color-dark);
-  background: var(--color-gray-50);
-  transition: all 0.2s;
-  font-family: inherit;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: var(--color-secondary);
-  background: white;
-  box-shadow: 0 0 0 3px rgb(var(--color-secondary-rgb) / 0.1);
-}
-
-.form-group textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
 /* Tipo Selector */
 .tipo-selector {
   display: flex;
@@ -1014,7 +787,7 @@
   gap: 6px;
   padding: 10px 14px;
   border: 1px solid var(--color-gray-200);
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-sm);
   font-size: 0.85rem;
   color: var(--color-gray-500);
@@ -1036,16 +809,6 @@
 .tipo-btn svg {
   font-size: 16px;
 }
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding-top: 8px;
-  border-top: 1px solid var(--color-gray-200);
-  margin-top: 8px;
-}
-
 /* ========================================
    Responsive
 ======================================== */
@@ -1086,15 +849,10 @@
     flex-wrap: nowrap;
   }
 
-  .filtro-btn {
+  .agendas .filtro-btn {
     white-space: nowrap;
     flex-shrink: 0;
   }
-
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-
   .evento-detalle {
     width: 260px;
   }
@@ -1148,19 +906,6 @@
   .detalle-content h2 {
     font-size: 1rem;
   }
-
-  .modal-content {
-    margin: 10px;
-  }
-
-  .modal-form {
-    padding: 16px;
-  }
-
-  .modal-actions {
-    flex-direction: column;
-  }
-
   .modal-actions button {
     width: 100%;
     justify-content: center;
@@ -1186,18 +931,6 @@
 .modal-content.modal-tipos {
   max-width: 520px;
 }
-
-.modal-body {
-  padding: 20px 24px;
-}
-
-.modal-footer {
-  padding: 16px 24px;
-  border-top: 1px solid var(--color-gray-200);
-  display: flex;
-  justify-content: flex-end;
-}
-
 /* Lista de tipos */
 .tipos-lista {
   display: flex;
@@ -1206,7 +939,7 @@
   margin-bottom: 24px;
 }
 
-.tipo-item {
+.agendas .tipo-item {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1242,13 +975,13 @@
   border-radius: var(--radius-sm);
   font-size: 0.9rem;
   color: var(--color-dark);
-  background: white;
+  background: var(--surface);
   min-width: 120px;
 }
 
 .tipo-input:focus {
   outline: none;
-  border-color: var(--color-secondary);
+  border-color: var(--brand);
 }
 
 .tipo-actions {
@@ -1257,7 +990,7 @@
   margin-left: auto;
 }
 
-.btn-icon-sm {
+.agendas .btn-icon-sm {
   width: 28px;
   height: 28px;
   border: none;
@@ -1269,42 +1002,42 @@
   transition: all 0.2s;
 }
 
-.btn-icon-sm.edit {
+.agendas .btn-icon-sm.edit {
   background: rgb(var(--color-primary-rgb) / 0.1);
   color: var(--color-primary);
 }
 
-.btn-icon-sm.edit:hover {
+.agendas .btn-icon-sm.edit:hover {
   background: var(--color-primary);
   color: white;
 }
 
-.btn-icon-sm.delete {
+.agendas .btn-icon-sm.delete {
   background: rgb(var(--color-danger-rgb) / 0.1);
   color: var(--color-danger);
 }
 
-.btn-icon-sm.delete:hover {
+.agendas .btn-icon-sm.delete:hover {
   background: var(--color-danger);
   color: white;
 }
 
-.btn-icon-sm.save {
+.agendas .btn-icon-sm.save {
   background: rgb(var(--color-accent-rgb) / 0.1);
   color: var(--color-accent);
 }
 
-.btn-icon-sm.save:hover {
+.agendas .btn-icon-sm.save:hover {
   background: var(--color-accent);
   color: white;
 }
 
-.btn-icon-sm.cancel {
+.agendas .btn-icon-sm.cancel {
   background: var(--color-gray-100);
   color: var(--color-gray-500);
 }
 
-.btn-icon-sm.cancel:hover {
+.agendas .btn-icon-sm.cancel:hover {
   background: var(--color-gray-200);
 }
 
@@ -1319,7 +1052,7 @@
   width: 28px;
   height: 28px;
   border: 1px solid var(--color-gray-200);
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-sm);
   cursor: pointer;
   display: flex;
@@ -1331,19 +1064,19 @@
 
 .icono-btn-mini.active,
 .icono-btn-mini:hover {
-  border-color: var(--color-secondary);
-  color: var(--color-secondary);
-  background: rgb(var(--color-secondary-rgb) / 0.1);
+  border-color: var(--brand);
+  color: var(--brand-text);
+  background: rgb(var(--brand-rgb) / 0.1);
 }
 
 /* Colores mini (para edición) */
-.colores-mini {
+.agendas .colores-mini {
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
 }
 
-.color-btn-mini {
+.agendas .color-btn-mini {
   width: 20px;
   height: 20px;
   border: 2px solid transparent;
@@ -1352,8 +1085,8 @@
   transition: all 0.2s;
 }
 
-.color-btn-mini.active,
-.color-btn-mini:hover {
+.agendas .color-btn-mini.active,
+.agendas .color-btn-mini:hover {
   border-color: var(--color-dark);
   transform: scale(1.1);
 }
@@ -1399,7 +1132,7 @@
   width: 36px;
   height: 36px;
   border: 1px solid var(--color-gray-200);
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-sm);
   cursor: pointer;
   display: flex;
@@ -1410,23 +1143,23 @@
 }
 
 .icono-btn:hover {
-  border-color: var(--color-secondary);
-  color: var(--color-secondary);
+  border-color: var(--brand);
+  color: var(--brand-text);
 }
 
 .icono-btn.active {
-  border-color: var(--color-secondary);
-  background: var(--color-secondary);
+  border-color: var(--brand);
+  background: var(--brand);
   color: white;
 }
 
-.colores-selector {
+.agendas .colores-selector {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.color-btn {
+.agendas .color-btn {
   width: 28px;
   height: 28px;
   border: 2px solid transparent;
@@ -1435,8 +1168,8 @@
   transition: all 0.2s;
 }
 
-.color-btn.active,
-.color-btn:hover {
+.agendas .color-btn.active,
+.agendas .color-btn:hover {
   border-color: var(--color-dark);
   transform: scale(1.1);
 }

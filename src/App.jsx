@@ -3,7 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoadingProvider } from './context/LoadingContext';
 import { ToastProvider } from './context/ToastContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Loading from './components/Loading';
+import { RequireModule } from './context/ModulesContext';
 import './App.css';
 
 // Lazy loading de componentes
@@ -27,9 +29,9 @@ const PlaceholderPage = ({ title }) => (
     alignItems: 'center',
     justifyContent: 'center',
     height: '60vh',
-    color: '#64748b'
+    color: 'var(--text-muted)'
   }}>
-    <h2 style={{ fontSize: '1.5rem', marginBottom: '8px', color: '#0f172a' }}>{title}</h2>
+    <h2 style={{ fontSize: '1.5rem', marginBottom: '8px', color: 'var(--text)' }}>{title}</h2>
     <p>Esta sección está en desarrollo</p>
   </div>
 );
@@ -96,7 +98,7 @@ const AppRoutes = () => {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="hablaphone" element={<Hablaphone />} />
             <Route path="reportes" element={<Reporteria />} />
-            <Route path="agendas" element={<Agendas />} />
+            <Route path="agendas" element={<RequireModule module="citas"><Agendas /></RequireModule>} />
             <Route path="contactos" element={<Contactos />} />
             <Route path="ia-operadora" element={<OperadoraIA />} />
             <Route path="campanas" element={<Campanas />} />
@@ -113,13 +115,15 @@ const AppRoutes = () => {
 
 function App() {
   return (
-    <Router>
-      <ToastProvider>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
-      </ToastProvider>
-    </Router>
+    <ThemeProvider>
+      <Router>
+        <ToastProvider>
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
+        </ToastProvider>
+      </Router>
+    </ThemeProvider>
   );
 }
 
