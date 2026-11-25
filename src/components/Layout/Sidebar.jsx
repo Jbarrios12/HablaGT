@@ -11,6 +11,7 @@ import {
   FiHeadphones,
   FiCpu,
   FiChevronLeft,
+  FiFileText,
   FiLogOut
 } from 'react-icons/fi';
 import { useLoading } from '../../context/LoadingContext';
@@ -25,6 +26,7 @@ const menuItems = [
   { path: '/agendas', icon: FiCalendar, label: 'Agendas', module: 'citas' },
   { path: '/contactos', icon: FiUsers, label: 'Contactos' },
   { path: '/campanas', icon: FiCpu, label: 'Campañas' },
+  { path: '/formularios', icon: FiFileText, label: 'Formularios' },
   { path: '/ia-operadora', icon: FiHeadphones, label: 'Operadora IA' },
   { path: '/configuracion', icon: FiSettings, label: 'Configuración' },
 ];

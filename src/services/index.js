@@ -10,3 +10,4 @@ export { softphoneService } from "./softphoneService";
 export { realtimeService } from "./realtimeService";
 export { integrationService } from "./integrationService";
 export { campaignService, agentIAService, flowService, kbCategoryService, kbDocumentService, contactListService, crewService, aiToolService, aiRunService, intentService, reminderService, moduleService } from "./campaignService";
+export { formService, formSubmissionService } from "./formService";

@@ -20,6 +20,7 @@ const Hablaphone = lazy(() => import('./components/Hablaphone'));
 const ImpersonateEntry = lazy(() => import('./components/Impersonate/ImpersonateEntry'));
 const OperadoraIA = lazy(() => import('./components/OperadoraIA'));
 const Campanas = lazy(() => import('./components/Campanas'));
+const Formularios = lazy(() => import('./components/Formularios'));
 
 // Componente temporal para páginas en desarrollo
 const PlaceholderPage = ({ title }) => (
@@ -102,6 +103,7 @@ const AppRoutes = () => {
             <Route path="contactos" element={<Contactos />} />
             <Route path="ia-operadora" element={<OperadoraIA />} />
             <Route path="campanas" element={<Campanas />} />
+            <Route path="formularios" element={<Formularios />} />
             <Route path="configuracion" element={<Configuracion />} />
           </Route>
 
