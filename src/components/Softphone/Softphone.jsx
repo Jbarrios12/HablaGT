@@ -246,15 +246,21 @@ const Softphone = ({ isOpen, onToggle }) => {
   };
 
   const handleSaveWrapUp = async () => {
-    if (lastCDR?.id) {
-      showLoading('Guardando wrap-up...');
+    // El softphone solo conoce el id del canal de la llamada; el backend
+    // encuentra (o crea) el registro de la llamada a partir de él.
+    const channel = activeChannelId || lastCDR?.id;
+    if (channel && (disposition || wrapUpNotes.trim())) {
+      showLoading('Guardando cierre de llamada...');
       try {
-        await cdrService.wrapUp(lastCDR.id, {
+        await cdrService.wrapUpByChannel(channel, {
           disposition,
-          observaciones: wrapUpNotes,
+          observaciones: wrapUpNotes.trim(),
         });
+        toast.success('Cierre de llamada guardado');
       } catch (err) {
-        console.error('wrap-up error', err);
+        // No se cierra la pantalla: el agente no pierde lo que escribió.
+        toast.error('No se pudo guardar el cierre: ' + (err?.response?.data?.error?.message || err.message));
+        return;
       } finally {
         hideLoading();
       }

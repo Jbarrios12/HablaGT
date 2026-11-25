@@ -34,5 +34,13 @@ export const cdrService = {
     const { data } = await api.post(`/cdr/${id}/wrap-up`, { disposition, observaciones });
     return data;
   },
+  // Cierre de llamada por id de canal (lo que devuelve /calls/originate).
+  async wrapUpByChannel(channelId, { disposition, observaciones }) {
+    const { data } = await api.post(
+      `/cdr/by-channel/${encodeURIComponent(channelId)}/wrap-up`,
+      { disposition, observaciones },
+    );
+    return data;
+  },
   toCSV,
 };
