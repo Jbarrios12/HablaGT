@@ -30,6 +30,7 @@ import {
 import { contactService, contactTagService } from '../../services';
 import { useLoading } from '../../context/LoadingContext';
 import { useToast } from '../../context/ToastContext';
+import ContactForms from './ContactForms';
 import './Contactos.css';
 
 // Datos de ejemplo - Contactos
@@ -761,6 +762,8 @@ const Contactos = () => {
                   )}
                 </div>
               </div>
+
+              <ContactForms key={contactoDetalle.id} contacto={contactoDetalle} />
 
               <div className="detalle-footer">
                 <span>Creado: {contactoDetalle.fechaCreacion}</span>

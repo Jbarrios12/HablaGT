@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRealtimeAudio } from '../../hooks/useRealtimeAudio';
 import { PRESENCE_OPTIONS, usePresence } from '../../hooks/usePresence';
@@ -17,13 +17,20 @@ import {
   FiPhoneIncoming,
   FiPhoneOutgoing,
   FiPhoneMissed,
-  FiCpu
+  FiCpu,
+  FiFileText,
+  FiCheckCircle
 } from 'react-icons/fi';
 import { playDTMF } from './useDTMF';
 import { softphoneService, cdrService } from '../../services';
 import { useLoading } from '../../context/LoadingContext';
 import { useToast } from '../../context/ToastContext';
 import './Softphone.css';
+
+// La ventana de formularios trae Form.io: se carga solo al abrirla.
+const FillFormModal = lazy(() =>
+  import('../Formularios/FormModals').then((m) => ({ default: m.FillFormModal })),
+);
 
 
 const Softphone = ({ isOpen, onToggle }) => {
@@ -44,6 +51,8 @@ const Softphone = ({ isOpen, onToggle }) => {
   const { presence, changePresence } = usePresence();
   const [wrapUpNotes, setWrapUpNotes] = useState('');
   const [disposition, setDisposition] = useState('');
+  const [formOpen, setFormOpen] = useState(false);
+  const [formsSaved, setFormsSaved] = useState(0);
   const pollRef = useRef(null);
 
   const keypadButtons = [
@@ -258,6 +267,7 @@ const Softphone = ({ isOpen, onToggle }) => {
     setLastCDR(null);
     setWrapUpNotes('');
     setDisposition('');
+    setFormsSaved(0);
   };
 
   const handleQuickCall = (number) => {
@@ -355,6 +365,14 @@ const Softphone = ({ isOpen, onToggle }) => {
                       rows={4}
                       className="sp-wrapup-textarea"
                     />
+                    <button type="button" className="sp-wrapup-form" onClick={() => setFormOpen(true)}>
+                      <FiFileText /> {formsSaved ? 'Llenar otro formulario' : 'Llenar formulario'}
+                    </button>
+                    {formsSaved > 0 && (
+                      <p className="sp-wrapup-done">
+                        <FiCheckCircle /> {formsSaved === 1 ? '1 formulario guardado' : `${formsSaved} formularios guardados`}
+                      </p>
+                    )}
                     <button className="sp-wrapup-save" onClick={handleSaveWrapUp}>
                       Guardar y cerrar
                     </button>
@@ -367,6 +385,7 @@ const Softphone = ({ isOpen, onToggle }) => {
                         setLastCDR(null);
                         setWrapUpNotes('');
                         setDisposition('');
+                        setFormsSaved(0);
                       }}
                     >
                       Omitir
@@ -423,6 +442,14 @@ const Softphone = ({ isOpen, onToggle }) => {
                         <button className="action-btn" onClick={handleTransfer}>
                           <FiPhoneOutgoing />
                           <span>Transfer</span>
+                        </button>
+                        <button
+                          className={`action-btn ${formsSaved ? 'active' : ''}`}
+                          onClick={() => setFormOpen(true)}
+                          title="Llenar un formulario ligado a esta llamada"
+                        >
+                          <FiFileText />
+                          <span>{formsSaved ? `Form. (${formsSaved})` : 'Formulario'}</span>
                         </button>
                         <button
                           className={`action-btn ${aiOn ? 'active' : ''}`}
@@ -533,6 +560,16 @@ const Softphone = ({ isOpen, onToggle }) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {formOpen && (
+        <Suspense fallback={null}>
+          <FillFormModal
+            context={{ phone: phoneNumber, callRef: activeChannelId || undefined, source: 'call' }}
+            onClose={() => setFormOpen(false)}
+            onSaved={() => setFormsSaved((n) => n + 1)}
+          />
+        </Suspense>
+      )}
     </>
   );
 };

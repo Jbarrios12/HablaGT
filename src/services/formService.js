@@ -91,12 +91,20 @@ export const formSubmissionService = {
     const { data } = await api.get(`/forms/${formId}/submissions`, { params });
     return data?.items || [];
   },
-  async create(formId, data) {
+  // context (opcional): { contact_id, phone, call_ref, source: 'manual'|'call' }.
+  // Si hay teléfono y no contact_id, el backend busca el contacto por teléfono.
+  async create(formId, data, context = {}) {
     const { data: created } = await api.post(`/forms/${formId}/submissions`, {
       data,
+      ...context,
       created_by_name: authorName(),
     });
     return created;
+  },
+  // Respuestas de cualquier formulario por { contact_id | phone | call_ref }.
+  async search(params) {
+    const { data } = await api.get("/form-submissions", { params });
+    return data?.items || [];
   },
   async remove(formId, subId) {
     await api.delete(`/forms/${formId}/submissions/${subId}`);

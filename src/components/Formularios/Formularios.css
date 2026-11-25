@@ -114,6 +114,16 @@
 .frm-table .btn-icon { margin-right: 4px; }
 
 /* ---------- Modales ---------- */
+/* Capa propia: va encima del softphone (z-index 1001). */
+.frm-layer { z-index: 1100; }
+.frm-context { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 4px; font-size: var(--font-size-sm); color: var(--text-muted); }
+.frm-context span { display: inline-flex; align-items: center; gap: 5px; }
+.frm-context-call { color: var(--success-text); font-weight: 600; }
+.frm-picker { margin-bottom: var(--space-4); max-width: 420px; }
+.frm-fill-inline { padding-top: var(--space-2); border-top: 1px solid var(--border); }
+.frm-empty--compact { padding: 36px 20px; border-style: solid; }
+.frm-empty--compact .btn-primary { text-decoration: none; }
+
 .frm-modal-wide { max-width: 760px; max-height: 88vh; overflow: auto; }
 .frm-templates { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
 .frm-template {
@@ -228,4 +238,16 @@
 @media (max-width: 768px) {
   .frm-panel { padding: var(--space-3); }
   .frm-editor-actions { width: 100%; }
+}
+
+.frm-tag-call {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  background: var(--success-soft);
+  color: var(--success-text);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  vertical-align: 1px;
 }

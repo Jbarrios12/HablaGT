@@ -671,6 +671,39 @@
   line-height: 1.4;
 }
 
+.sp-wrapup-form {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--brand-text);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.sp-wrapup-form:hover {
+  background: var(--brand-soft);
+  border-color: var(--brand);
+}
+
+.sp-wrapup-done {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--success-text);
+}
+
 .sp-wrapup-save {
   width: 100%;
   padding: 12px;

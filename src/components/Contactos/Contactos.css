@@ -759,6 +759,44 @@
   color: var(--color-primary);
 }
 
+/* Formularios del contacto */
+.detalle-historial h3 .detalle-mini-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--brand-text);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+.detalle-historial h3 .detalle-mini-btn:hover { background: var(--brand-soft); border-color: var(--brand); }
+
+.historial-item--btn {
+  width: 100%;
+  border: none;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.historial-item--btn:hover { background: var(--brand-soft); }
+.historial-item--btn .historial-info { flex: 1; min-width: 0; }
+.historial-chevron { color: var(--text-subtle); flex-shrink: 0; }
+
+.contactos .historial-icon.form {
+  background: var(--brand-soft);
+  color: var(--brand-text);
+}
+
 .historial-info {
   display: flex;
   flex-direction: column;

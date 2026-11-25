@@ -420,9 +420,9 @@ function SubmissionsView({ form, onBack, onFill }) {
 
   const exportCsv = () => {
     const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const header = ['Fecha', 'Capturado por', ...fields.map((f) => f.label)].map(esc).join(',');
+    const header = ['Fecha', 'Capturado por', 'Contacto', 'Teléfono', 'Origen', ...fields.map((f) => f.label)].map(esc).join(',');
     const rows = subs.map((s) => [
-      fmtDate(s.created_at), s.created_by_name, ...fields.map((f) => displayValue(getPath(s.data, f.key))),
+      fmtDate(s.created_at), s.created_by_name, s.contact_name, s.phone, s.source === 'call' ? 'Llamada' : 'Manual', ...fields.map((f) => displayValue(getPath(s.data, f.key))),
     ].map(esc).join(','));
     downloadFile(`${slug(form.title)}-respuestas.csv`, '﻿' + [header, ...rows].join('\n'), 'text/csv;charset=utf-8');
   };
@@ -454,6 +454,7 @@ function SubmissionsView({ form, onBack, onFill }) {
               <tr>
                 <th>Fecha</th>
                 <th>Capturado por</th>
+                <th>Contacto</th>
                 {fields.map((f) => <th key={f.key}>{f.label}</th>)}
                 <th />
               </tr>
@@ -463,6 +464,10 @@ function SubmissionsView({ form, onBack, onFill }) {
                 <tr key={s.id}>
                   <td className="nowrap">{fmtDate(s.created_at)}</td>
                   <td>{s.created_by_name || '—'}</td>
+                  <td>
+                    {s.contact_name || s.phone || '—'}
+                    {s.source === 'call' && <span className="frm-tag-call">Llamada</span>}
+                  </td>
                   {fields.map((f) => <td key={f.key}>{displayValue(getPath(s.data, f.key))}</td>)}
                   <td className="nowrap">
                     <button className="btn-icon edit" title="Ver" onClick={() => setViewing(s)}><FiEye /></button>
