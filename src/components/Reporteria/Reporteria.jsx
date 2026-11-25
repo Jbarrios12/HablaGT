@@ -215,7 +215,7 @@ const Reporteria = () => {
         <div className="reporteria-title">
           <FiBarChart2 className="title-icon" />
           <div>
-            <h1>Reportería FreePBX</h1>
+            <h1>Reportería</h1>
             <p>Análisis detallado de llamadas y rendimiento</p>
           </div>
         </div>
@@ -362,6 +362,16 @@ const Reporteria = () => {
                   </tr>
                 </thead>
                 <tbody>
+                  {filteredData.length === 0 && (
+                    <tr>
+                      <td colSpan={8}>
+                        <div className="empty-state">
+                          <FiPhone />
+                          <p>No hay llamadas para los filtros seleccionados</p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
                   {filteredData.map((item) => (
                     <tr key={item.id}>
                       <td className="fecha-cell">{(item.occurred_at || '').replace('T', ' ').substring(0, 19)}</td>

@@ -15,6 +15,7 @@ import {
 import { dashboardService } from '../../services';
 import { useLoading } from '../../context/LoadingContext';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 import { useRealtimeEvents } from '../../hooks/useRealtimeEvents';
 import './Dashboard.css';
 
@@ -48,6 +49,7 @@ const statusLabel = (s) => {
 };
 
 const Dashboard = () => {
+  const { user } = useAuth();
   const { showLoading, hideLoading } = useLoading();
   const toast = useToast();
   const [summary, setSummary] = useState(null);
@@ -135,6 +137,12 @@ const Dashboard = () => {
     distribucion.forEach((v, i) => { if (v > max) { max = v; idx = i; } });
     return { hour: idx, count: max };
   })();
+  const hourNow = new Date().getHours();
+  const greeting = hourNow < 12 ? 'Buenos días' : hourNow < 19 ? 'Buenas tardes' : 'Buenas noches';
+  const firstName = (user?.nombre || user?.username || '').split(' ')[0];
+  const todayRaw = new Date().toLocaleDateString('es-GT', { weekday: 'long', day: 'numeric', month: 'long' });
+  const todayLabel = todayRaw.charAt(0).toUpperCase() + todayRaw.slice(1);
+
   const avgPerHour = distribucion.length
     ? Math.round(distribucion.reduce((a, b) => a + b, 0) / 24)
     : 0;
@@ -146,6 +154,14 @@ const Dashboard = () => {
       initial="hidden"
       animate="visible"
     >
+      <motion.div className="dashboard-hello" variants={itemVariants}>
+        <div>
+          <h1>{greeting}{firstName ? `, ${firstName}` : ''}</h1>
+          <p>Así va la operación de hoy</p>
+        </div>
+        <span className="dashboard-date">{todayLabel}</span>
+      </motion.div>
+
       <div className="stats-grid">
         {statsCards.map((stat, index) => (
           <motion.div key={index} className={`stat-card ${stat.color}`} variants={itemVariants}>

@@ -15,6 +15,7 @@ const PAGE_TITLES = {
   '/contactos': 'Contactos',
   '/ia-operadora': 'Operadora IA',
   '/campanas': 'Campañas',
+  '/formularios': 'Formularios',
   '/configuracion': 'Configuración',
 };
 
@@ -28,6 +29,10 @@ const Layout = () => {
     setMobileNavOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    document.title = `${title} · HablaGT`;
+  }, [title]);
+
   return (
     <ModulesProvider>
     <div className="layout">
@@ -38,7 +43,7 @@ const Layout = () => {
       />
       <div className="main-wrapper">
         <ImpersonationBanner />
-        <Header title={title} onMenuClick={() => setMobileNavOpen((v) => !v)} />
+        <Header onMenuClick={() => setMobileNavOpen((v) => !v)} />
 
         {/* Área de contenido con Softphone al lado */}
         <div className={`content-area ${isSoftphoneOpen ? 'softphone-open' : ''}`}>

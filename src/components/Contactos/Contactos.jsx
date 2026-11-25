@@ -146,6 +146,7 @@ const Contactos = () => {
   const { showLoading, hideLoading } = useLoading();
   const toast = useToast();
   const [contactos, setContactos] = useState([]);
+  const [loaded, setLoaded] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [filtroEtiqueta, setFiltroEtiqueta] = useState('todos');
   const [modalContacto, setModalContacto] = useState({ open: false, modo: 'crear', data: null });
@@ -191,7 +192,9 @@ const Contactos = () => {
         setEtiquetasConfig(Object.keys(tagMap).length ? tagMap : etiquetasDefault);
       } catch (err) {
         console.error('Error cargando contactos', err);
+        toast.error('No se pudieron cargar los contactos');
       } finally {
+        setLoaded(true);
         hideLoading();
       }
     };
@@ -514,7 +517,7 @@ const Contactos = () => {
               ))}
             </AnimatePresence>
 
-            {contactosFiltrados.length === 0 && (
+            {loaded && contactosFiltrados.length === 0 && (
               <div className="empty-state">
                 <FiUsers />
                 <p>No se encontraron contactos</p>
@@ -570,7 +573,7 @@ const Contactos = () => {
               ))}
             </AnimatePresence>
 
-            {contactosFiltrados.length === 0 && (
+            {loaded && contactosFiltrados.length === 0 && (
               <div className="empty-state">
                 <FiUsers />
                 <p>No se encontraron contactos</p>

@@ -124,6 +124,46 @@
   gap: var(--space-5);
 }
 
+/* Pantallas anchas: Llamadas + IA arriba, Actividad + Agentes abajo, sin huecos */
+@media (min-width: 1201px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .dashboard-grid .calls-card,
+  .dashboard-grid .activity-card {
+    grid-column: span 2;
+  }
+}
+
+/* Saludo */
+.dashboard-hello {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.dashboard-hello h1 {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+.dashboard-hello p {
+  margin: 4px 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+.dashboard-date {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+}
+
 .dashboard-card {
   background: var(--surface);
   border-radius: var(--radius-xl);
@@ -627,7 +667,7 @@
 /* Móviles pequeños */
 @media (max-width: 500px) {
   .dashboard .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
 

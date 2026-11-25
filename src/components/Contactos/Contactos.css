@@ -121,7 +121,7 @@
 }
 
 .etiquetas-list li.active {
-  background: color-mix(in srgb, var(--tag-color, var(--brand)) 12%, white);
+  background: color-mix(in srgb, var(--tag-color, var(--brand)) 12%, var(--surface));
   color: var(--tag-color, var(--brand-text));
 }
 
@@ -148,7 +148,7 @@
 }
 
 .etiquetas-list li.active .count {
-  background: color-mix(in srgb, var(--tag-color, var(--brand)) 20%, white);
+  background: color-mix(in srgb, var(--tag-color, var(--brand)) 20%, var(--surface));
   color: var(--tag-color, var(--brand-text));
 }
 
@@ -289,6 +289,12 @@
 
 .contactos .contacto-card.selected {
   border: 2px solid var(--brand);
+}
+
+.contacto-avatar,
+.contacto-row-avatar,
+.detalle-avatar {
+  text-transform: uppercase;
 }
 
 .contacto-avatar {

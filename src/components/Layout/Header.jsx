@@ -18,7 +18,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import './Header.css';
 
-const Header = ({ title, onMenuClick }) => {
+const Header = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
   const { resolved: theme, toggleMode } = useTheme();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -108,13 +108,9 @@ const Header = ({ title, onMenuClick }) => {
         <button className="icon-btn menu-toggle" onClick={onMenuClick} aria-label="Abrir menú">
           <FiMenu />
         </button>
-        <h1 className="page-title">{title}</h1>
-      </div>
-
-      <div className="header-center">
         <div className="header-search">
           <FiSearch className="search-icon" />
-          <input type="text" placeholder="Buscar..." />
+          <input type="text" placeholder="Buscar..." aria-label="Buscar" />
         </div>
       </div>
 
