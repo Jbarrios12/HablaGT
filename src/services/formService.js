@@ -1,88 +1,104 @@
+import { api } from "../lib/api";
 import { tokenStorage } from "../lib/tokenStorage";
 
-// Formularios dinámicos (Form.io).
-//
-// El backend todavía no expone /forms, así que los esquemas y respuestas se
-// guardan en localStorage, separados por tenant. La API es async y tiene la
-// misma forma que el resto de servicios, para que el día que exista el
-// endpoint solo haya que cambiar estas funciones por llamadas a `api`:
+// Formularios dinámicos (Form.io) guardados en el backend, por tenant:
 //   GET/POST /forms, GET/PUT/DELETE /forms/:id,
 //   GET/POST /forms/:id/submissions, DELETE /forms/:id/submissions/:sid
+// El backend toma el autor del token; created_by_name es solo el nombre a mostrar.
 
+const authorName = () => {
+  const u = tokenStorage.getUser();
+  return u?.nombre || u?.name || u?.username || "";
+};
+
+// ---- Migración única desde la versión anterior (localStorage) ----
+// Antes los formularios vivían en el navegador. Si quedan, se suben al
+// backend una vez y se borran localmente solo los que se subieron bien.
 const tenant = () =>
   tokenStorage.getTenantOverride() || import.meta.env.VITE_TENANT_SLUG || "demo";
-const formsKey = () => `hablagt_forms_${tenant()}`;
-const subsKey = (formId) => `hablagt_form_subs_${tenant()}_${formId}`;
+const legacyFormsKey = () => `hablagt_forms_${tenant()}`;
+const legacySubsKey = (id) => `hablagt_form_subs_${tenant()}_${id}`;
+let migration = null;
 
-const read = (key) => {
+const readLegacy = (key) => {
   try {
     return JSON.parse(localStorage.getItem(key)) || [];
   } catch {
     return [];
   }
 };
-const write = (key, value) => localStorage.setItem(key, JSON.stringify(value));
-const uid = () =>
-  globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-const now = () => new Date().toISOString();
 
-const author = () => {
-  const u = tokenStorage.getUser();
-  return u?.name || u?.username || u?.email || "";
-};
+async function migrateLegacy() {
+  const legacy = readLegacy(legacyFormsKey());
+  if (!legacy.length) return;
+  const pending = [];
+  for (const f of legacy) {
+    try {
+      const { data: created } = await api.post("/forms", {
+        title: f.title || "Formulario",
+        description: f.description || "",
+        display: f.display === "wizard" ? "wizard" : "form",
+        schema: f.schema?.components ? f.schema : { components: [] },
+        created_by_name: f.created_by || authorName(),
+      });
+      for (const s of readLegacy(legacySubsKey(f.id))) {
+        await api.post(`/forms/${created.id}/submissions`, {
+          data: s.data || {},
+          created_by_name: s.created_by || "",
+        });
+      }
+      localStorage.removeItem(legacySubsKey(f.id));
+    } catch {
+      pending.push(f); // se reintenta la próxima vez
+    }
+  }
+  if (pending.length) localStorage.setItem(legacyFormsKey(), JSON.stringify(pending));
+  else localStorage.removeItem(legacyFormsKey());
+}
 
 export const formService = {
-  async list() {
-    return read(formsKey())
-      .map((f) => ({ ...f, submissions: read(subsKey(f.id)).length }))
-      .sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+  async list(params = {}) {
+    if (!migration) migration = migrateLegacy().catch(() => {});
+    await migration;
+    const { data } = await api.get("/forms", { params });
+    return data?.items || [];
   },
   async get(id) {
-    const form = read(formsKey()).find((f) => f.id === id);
-    if (!form) throw new Error("Formulario no encontrado");
-    return form;
+    const { data } = await api.get(`/forms/${id}`);
+    return data;
   },
   async create({ title, description = "", display = "form", schema }) {
-    const form = {
-      id: uid(),
+    const { data } = await api.post("/forms", {
       title,
       description,
       display,
       schema: schema || { display, components: [] },
-      created_at: now(),
-      updated_at: now(),
-      created_by: author(),
-    };
-    write(formsKey(), [...read(formsKey()), form]);
-    return form;
-  },
-  async update(id, patch) {
-    let updated;
-    const forms = read(formsKey()).map((f) => {
-      if (f.id !== id) return f;
-      updated = { ...f, ...patch, id, updated_at: now() };
-      return updated;
+      created_by_name: authorName(),
     });
-    if (!updated) throw new Error("Formulario no encontrado");
-    write(formsKey(), forms);
-    return updated;
+    return data;
+  },
+  async update(id, { title, description = "", display = "form", schema }) {
+    const { data } = await api.put(`/forms/${id}`, { title, description, display, schema });
+    return data;
   },
   async remove(id) {
-    write(formsKey(), read(formsKey()).filter((f) => f.id !== id));
-    localStorage.removeItem(subsKey(id));
+    await api.delete(`/forms/${id}`);
   },
 };
 
 export const formSubmissionService = {
-  async list(formId) {
-    return read(subsKey(formId)).sort((a, b) => b.created_at.localeCompare(a.created_at));
+  async list(formId, params = {}) {
+    const { data } = await api.get(`/forms/${formId}/submissions`, { params });
+    return data?.items || [];
   },
   async create(formId, data) {
-    const sub = { id: uid(), form_id: formId, data, created_at: now(), created_by: author() };
-    write(subsKey(formId), [...read(subsKey(formId)), sub]);
-    return sub;
+    const { data: created } = await api.post(`/forms/${formId}/submissions`, {
+      data,
+      created_by_name: authorName(),
+    });
+    return created;
   },
   async remove(formId, subId) {
-    write(subsKey(formId), read(subsKey(formId)).filter((s) => s.id !== subId));
+    await api.delete(`/forms/${formId}/submissions/${subId}`);
   },
 };

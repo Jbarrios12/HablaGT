@@ -50,10 +50,62 @@ export const formioI18n = {
 
 export const formOptions = { language: 'es', i18n: formioI18n };
 
+// Textos del panel lateral del constructor.
+const builderI18n = {
+  es: {
+    ...formioI18n.es,
+    searchFields: 'Buscar campos…',
+    'No Matches Found': 'Sin coincidencias',
+    'Drag and Drop a form component': 'Arrastra aquí un campo',
+    Basic: 'Básicos',
+    Advanced: 'Avanzados',
+    Layout: 'Diseño',
+    Data: 'Datos',
+    'Text Field': 'Texto',
+    'Text Area': 'Área de texto',
+    Number: 'Número',
+    Password: 'Contraseña',
+    Checkbox: 'Casilla',
+    'Select Boxes': 'Casillas múltiples',
+    Select: 'Lista desplegable',
+    Radio: 'Opción única',
+    Button: 'Botón',
+    Email: 'Correo',
+    Url: 'URL',
+    'Phone Number': 'Teléfono',
+    Tags: 'Etiquetas',
+    Address: 'Dirección',
+    'Date / Time': 'Fecha / hora',
+    Day: 'Día',
+    Time: 'Hora',
+    Currency: 'Moneda',
+    Survey: 'Encuesta',
+    Signature: 'Firma',
+    'HTML Element': 'Elemento HTML',
+    Content: 'Contenido',
+    Columns: 'Columnas',
+    'Field Set': 'Grupo de campos',
+    Panel: 'Panel',
+    Table: 'Tabla',
+    Tabs: 'Pestañas',
+    Well: 'Recuadro',
+    Hidden: 'Oculto',
+    Container: 'Contenedor',
+    'Data Map': 'Mapa de datos',
+    'Data Grid': 'Tabla de datos',
+    'Edit Grid': 'Tabla editable',
+    Save: 'Guardar',
+    Cancel: 'Cancelar',
+    Remove: 'Eliminar',
+    Preview: 'Vista previa',
+    Help: 'Ayuda',
+  },
+};
+
 // Builder: sin los grupos que requieren un servidor Form.io (Premium, Recursos).
 export const builderOptions = {
   language: 'es',
-  i18n: formioI18n,
+  i18n: builderI18n,
   noNewEdit: false,
   builder: {
     premium: false,

@@ -40,6 +40,9 @@ const toWizard = (components = []) => {
   return [{ type: 'panel', key: 'pagina1', title: 'Página 1', label: 'Página 1', input: false, components: fields }];
 };
 
+// Mensaje de error legible a partir de una respuesta de la API.
+const apiError = (e, fallback) => e?.response?.data?.error?.message || e?.message || fallback;
+
 const getPath = (obj, path) => path.split('.').reduce((o, k) => (o == null ? o : o[k]), obj);
 
 const displayValue = (v) => {
@@ -84,32 +87,44 @@ export default function Formularios() {
 
   const handleCreate = async ({ title, description, display, template }) => {
     const tpl = FORM_TEMPLATES.find((t) => t.key === template) || FORM_TEMPLATES[0];
-    const form = await formService.create({
-      title, description, display,
-      schema: {
-        display,
-        components: display === 'wizard' ? toWizard(structuredClone(tpl.components)) : structuredClone(tpl.components),
-      },
-    });
-    setCreateOpen(false);
-    toast.success('Formulario creado');
-    setView({ mode: 'builder', form });
+    try {
+      const form = await formService.create({
+        title, description, display,
+        schema: {
+          display,
+          components: display === 'wizard' ? toWizard(structuredClone(tpl.components)) : structuredClone(tpl.components),
+        },
+      });
+      setCreateOpen(false);
+      toast.success('Formulario creado');
+      setView({ mode: 'builder', form });
+    } catch (e) {
+      toast.error(apiError(e, 'No se pudo crear el formulario'));
+    }
   };
 
   const handleDuplicate = async (f) => {
-    await formService.create({
-      title: `${f.title} (copia)`, description: f.description, display: f.display,
-      schema: structuredClone(f.schema),
-    });
-    toast.success('Formulario duplicado');
-    load();
+    try {
+      await formService.create({
+        title: `${f.title} (copia)`, description: f.description, display: f.display,
+        schema: structuredClone(f.schema),
+      });
+      toast.success('Formulario duplicado');
+      load();
+    } catch (e) {
+      toast.error(apiError(e, 'No se pudo duplicar el formulario'));
+    }
   };
 
   const handleDelete = async () => {
-    await formService.remove(confirmDelete.id);
-    toast.success('Formulario eliminado');
-    setConfirmDelete(null);
-    load();
+    try {
+      await formService.remove(confirmDelete.id);
+      toast.success('Formulario eliminado');
+      setConfirmDelete(null);
+      load();
+    } catch (e) {
+      toast.error(apiError(e, 'No se pudo eliminar el formulario'));
+    }
   };
 
   const filtered = useMemo(() => {
@@ -232,9 +247,13 @@ function BuilderView({ form: initial, onBack }) {
 
   const save = async () => {
     if (!meta.title.trim()) return toast.warning('El formulario necesita un nombre');
-    await formService.update(initial.id, { ...meta, schema: { ...schemaRef.current, display: meta.display } });
-    setDirty(false);
-    toast.success('Formulario guardado');
+    try {
+      await formService.update(initial.id, { ...meta, schema: { ...schemaRef.current, display: meta.display } });
+      setDirty(false);
+      toast.success('Formulario guardado');
+    } catch (e) {
+      toast.error(apiError(e, 'No se pudo guardar el formulario'));
+    }
   };
 
   const changeDisplay = (display) => {
@@ -346,7 +365,7 @@ function FillView({ form, onBack, onSeeResponses }) {
       toast.success('Respuesta guardada');
       setRound((r) => r + 1); // formulario limpio para la siguiente captura
     } catch (e) {
-      toast.error(e.message || 'No se pudo guardar la respuesta');
+      toast.error(apiError(e, 'No se pudo guardar la respuesta'));
     }
   };
 
@@ -382,22 +401,28 @@ function SubmissionsView({ form, onBack, onFill }) {
   const load = useCallback(async () => setSubs(await formSubmissionService.list(form.id)), [form.id]);
   useEffect(() => {
     let alive = true;
-    formSubmissionService.list(form.id).then((d) => alive && setSubs(d));
+    formSubmissionService.list(form.id)
+      .then((d) => alive && setSubs(d))
+      .catch((e) => toast.error(apiError(e, 'No se pudieron cargar las respuestas')));
     return () => { alive = false; };
-  }, [form.id]);
+  }, [form.id, toast]);
 
   const remove = async (s) => {
     if (!window.confirm('¿Eliminar esta respuesta?')) return;
-    await formSubmissionService.remove(form.id, s.id);
-    toast.success('Respuesta eliminada');
-    load();
+    try {
+      await formSubmissionService.remove(form.id, s.id);
+      toast.success('Respuesta eliminada');
+      load();
+    } catch (e) {
+      toast.error(apiError(e, 'No se pudo eliminar la respuesta'));
+    }
   };
 
   const exportCsv = () => {
     const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const header = ['Fecha', 'Capturado por', ...fields.map((f) => f.label)].map(esc).join(',');
     const rows = subs.map((s) => [
-      fmtDate(s.created_at), s.created_by, ...fields.map((f) => displayValue(getPath(s.data, f.key))),
+      fmtDate(s.created_at), s.created_by_name, ...fields.map((f) => displayValue(getPath(s.data, f.key))),
     ].map(esc).join(','));
     downloadFile(`${slug(form.title)}-respuestas.csv`, '﻿' + [header, ...rows].join('\n'), 'text/csv;charset=utf-8');
   };
@@ -437,7 +462,7 @@ function SubmissionsView({ form, onBack, onFill }) {
               {subs.map((s) => (
                 <tr key={s.id}>
                   <td className="nowrap">{fmtDate(s.created_at)}</td>
-                  <td>{s.created_by || '—'}</td>
+                  <td>{s.created_by_name || '—'}</td>
                   {fields.map((f) => <td key={f.key}>{displayValue(getPath(s.data, f.key))}</td>)}
                   <td className="nowrap">
                     <button className="btn-icon edit" title="Ver" onClick={() => setViewing(s)}><FiEye /></button>
