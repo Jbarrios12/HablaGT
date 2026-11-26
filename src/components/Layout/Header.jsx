@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLocation } from 'react-router-dom';
 import {
   FiSearch,
   FiBell,
@@ -27,16 +28,38 @@ const Header = ({ onMenuClick }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef(null);
   const presenceRef = useRef(null);
+  const userMenuRef = useRef(null);
+  const location = useLocation();
   const [showPresence, setShowPresence] = useState(false);
   const { presence, current: currentPresence, changePresence } = usePresence();
 
+  // Los tres menús del header (estado, notificaciones, usuario) se cierran
+  // al hacer clic afuera, con Escape y al cambiar de página.
   useEffect(() => {
     const onClick = (e) => {
       if (presenceRef.current && !presenceRef.current.contains(e.target)) setShowPresence(false);
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setShowNotifications(false);
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setShowUserMenu(false);
+    };
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      setShowPresence(false);
+      setShowNotifications(false);
+      setShowUserMenu(false);
     };
     document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('keydown', onKey);
+    };
   }, []);
+
+  useEffect(() => {
+    setShowPresence(false);
+    setShowNotifications(false);
+    setShowUserMenu(false);
+  }, [location.pathname]);
 
   const loadNotifications = async () => {
     try {
@@ -59,16 +82,6 @@ const Header = ({ onMenuClick }) => {
     loadNotifications();
     const interval = setInterval(loadNotifications, 30000);
     return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const onClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setShowNotifications(false);
-      }
-    };
-    document.addEventListener('mousedown', onClickOutside);
-    return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
 
   const handleMarkAllRead = async () => {
@@ -160,6 +173,8 @@ const Header = ({ onMenuClick }) => {
           <button
             className="icon-btn notification-btn"
             onClick={() => setShowNotifications(!showNotifications)}
+            aria-label="Notificaciones"
+            aria-expanded={showNotifications}
           >
             <FiBell />
             {unreadCount > 0 && (
@@ -214,10 +229,12 @@ const Header = ({ onMenuClick }) => {
         </div>
 
         {/* Usuario */}
-        <div className="header-dropdown">
+        <div className="header-dropdown" ref={userMenuRef}>
           <button
             className="user-btn"
             onClick={() => setShowUserMenu(!showUserMenu)}
+            aria-label="Menú de usuario"
+            aria-expanded={showUserMenu}
           >
             <div className="user-avatar">
               <FiUser />

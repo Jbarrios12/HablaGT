@@ -456,3 +456,17 @@ button.phone-status {
     display: none;
   }
 }
+
+/* Celular: el menú de notificaciones (360 px anclado a la campana) se
+   salía por la izquierda; ocupa el ancho de la pantalla con margen. */
+@media (max-width: 480px) {
+  .notifications-menu {
+    position: fixed;
+    top: 68px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-height: calc(100dvh - 96px);
+    overflow-y: auto;
+  }
+}

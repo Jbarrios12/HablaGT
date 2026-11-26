@@ -981,6 +981,9 @@
     top: 60px;
     right: 0;
     bottom: 0;
+    /* top/bottom definen el alto; height: 100% (de la regla base) lo hacía
+       medir toda la pantalla y el final del panel quedaba fuera. */
+    height: auto;
     z-index: 1000;
     border-radius: 0;
     box-shadow: -5px 0 30px rgb(var(--color-dark-rgb) / 0.15);
@@ -1089,4 +1092,17 @@
   background: rgb(var(--color-danger-rgb) / 0.08);
   border-radius: var(--radius-sm);
   padding: 6px 8px;
+}
+
+/* Celular: el panel ocupa todo el ancho (antes dejaba una franja de la
+   página a la izquierda). El ancho animado viene en línea desde React. */
+@media (max-width: 480px) {
+  .softphone-panel {
+    left: 0;
+    width: 100% !important;
+  }
+
+  .sp-inner {
+    max-width: none;
+  }
 }
