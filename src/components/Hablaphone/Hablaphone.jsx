@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { cdrService, agentSelfService } from '../../services';
 import { checkRecording, recordingSrc } from '../../lib/recordings';
 import AudioSettings from './AudioSettings';
+import { usePresence } from '../../hooks/usePresence';
 import { useLoading } from '../../context/LoadingContext';
 import { useToast } from '../../context/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -33,11 +34,13 @@ import {
 import './Hablaphone.css';
 
 // Estados disponibles del agente
+// Mismos nombres que el selector del encabezado (usePresence). "En llamada"
+// solo se muestra si el sistema lo pone; no se elige a mano.
 const estadosAgente = [
   { id: 'disponible', label: 'Disponible', color: '#10b981', icon: FiCheck },
-  { id: 'en_llamada', label: 'En Llamada', color: '#6366f1', icon: FiPhone },
-  { id: 'pausa', label: 'En Pausa', color: '#f59e0b', icon: FiPause },
-  { id: 'no_disponible', label: 'No Disponible', color: '#ef4444', icon: FiX }
+  { id: 'en_llamada', label: 'En llamada', color: '#6366f1', icon: FiPhone, auto: true },
+  { id: 'pausa', label: 'Ocupado', color: '#f59e0b', icon: FiPause },
+  { id: 'no_disponible', label: 'Ausente', color: '#ef4444', icon: FiX }
 ];
 
 // Valores por defecto mientras cargan las estadísticas reales (CDR).
@@ -52,7 +55,9 @@ const ESTADISTICAS_VACIAS = {
 
 const Hablaphone = () => {
   const [tabActivo, setTabActivo] = useState('telefono');
-  const [estadoAgente, setEstadoAgente] = useState('disponible');
+  // Estado del agente compartido con el encabezado (antes era una copia
+  // local que siempre arrancaba en "Disponible" y no se sincronizaba).
+  const { presence: estadoAgente, changePresence } = usePresence();
   const [showEstados, setShowEstados] = useState(false);
   const [numeroMarcado, setNumeroMarcado] = useState('');
   // Estado real de la llamada, publicado por el softphone (único dueño de la
@@ -86,17 +91,15 @@ const Hablaphone = () => {
   const [cargandoStats, setCargandoStats] = useState(false);
 
   const [sipInfo, setSipInfo] = useState({ extension: '', servidor: '', estado: 'desconectado' });
-  const [presence, setPresence] = useState({ estado: 'disponible' });
   const { showLoading, hideLoading } = useLoading();
   const toast = useToast();
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [hist, sip, pres] = await Promise.all([
+        const [hist, sip] = await Promise.all([
           cdrService.list({ page_size: 50, page: 1 }),
           agentSelfService.getSIP().catch(() => ({})),
-          agentSelfService.getMyPresence().catch(() => ({})),
         ]);
         const items = hist?.items || hist || [];
         setHistorial(
@@ -119,7 +122,6 @@ const Hablaphone = () => {
           servidor: sip?.servidor || sip?.server || '',
           estado: sip?.estado || 'desconectado',
         });
-        setPresence({ estado: pres?.estado || 'disponible', sip_connected: pres?.sip_connected });
       } catch (err) {
         console.error('hablaphone load error', err);
       }
@@ -194,13 +196,8 @@ const Hablaphone = () => {
   };
 
   const handleCambiarEstado = async (nuevoEstado) => {
-    setEstadoAgente(nuevoEstado);
     setShowEstados(false);
-    try {
-      await agentSelfService.setMyPresence(nuevoEstado);
-    } catch (err) {
-      console.error('presence error', err);
-    }
+    if (!(await changePresence(nuevoEstado))) toast.error('No se pudo cambiar tu estado.');
   };
 
   const handleLlamar = async () => {
@@ -303,7 +300,7 @@ const Hablaphone = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
               >
-                {estadosAgente.map(estado => {
+                {estadosAgente.filter((e) => !e.auto).map(estado => {
                   const Icon = estado.icon;
                   return (
                     <button
