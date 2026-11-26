@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiFileText, FiPlus, FiSearch, FiEdit2, FiTrash2, FiPlay, FiList, FiX,
-  FiArrowLeft, FiSave, FiDownload, FiUpload, FiEye, FiCode, FiCopy,
+  FiArrowLeft, FiSave, FiDownload, FiUpload, FiEye, FiCode, FiCopy, FiChevronLeft, FiChevronRight,
 } from 'react-icons/fi';
 import { Form, FormBuilder, Utils } from '@formio/react';
 import { csvCell } from '../../lib/csvCell';
@@ -407,20 +407,33 @@ function FillView({ form, onBack, onSeeResponses }) {
 
 /* ---------------- Respuestas ---------------- */
 
+const SUBS_PAGE_SIZE = 50;
+
 function SubmissionsView({ form, onBack, onFill }) {
   const toast = useToast();
   const [subs, setSubs] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [reload, setReload] = useState(0);
+  const [exporting, setExporting] = useState(false);
   const [viewing, setViewing] = useState(null);
   const fields = useMemo(() => inputFields(form.schema), [form.schema]);
+  const pages = Math.max(1, Math.ceil(total / SUBS_PAGE_SIZE));
 
-  const load = useCallback(async () => setSubs(await formSubmissionService.list(form.id)), [form.id]);
+  const load = useCallback(() => setReload((n) => n + 1), []);
   useEffect(() => {
     let alive = true;
-    formSubmissionService.list(form.id)
-      .then((d) => alive && setSubs(d))
+    formSubmissionService.listPage(form.id, page, SUBS_PAGE_SIZE)
+      .then((d) => {
+        if (!alive) return;
+        // Si se borró lo último de la página, volver a la anterior.
+        if (!d.items.length && page > 1) { setPage(page - 1); return; }
+        setSubs(d.items);
+        setTotal(d.total);
+      })
       .catch((e) => toast.error(apiError(e, 'No se pudieron cargar las respuestas')));
     return () => { alive = false; };
-  }, [form.id, toast]);
+  }, [form.id, page, reload, toast]);
 
   const remove = async (s) => {
     if (!window.confirm('¿Eliminar esta respuesta?')) return;
@@ -433,10 +446,20 @@ function SubmissionsView({ form, onBack, onFill }) {
     }
   };
 
-  const exportCsv = () => {
+  const exportCsv = async () => {
+    setExporting(true);
+    let all;
+    try {
+      all = await formSubmissionService.listAll(form.id); // todas, no solo esta página
+    } catch (e) {
+      toast.error(apiError(e, 'No se pudieron descargar las respuestas'));
+      return;
+    } finally {
+      setExporting(false);
+    }
     const esc = csvCell;
     const header = ['Fecha', 'Capturado por', 'Contacto', 'Teléfono', 'Origen', ...fields.map((f) => f.label)].map(esc).join(',');
-    const rows = subs.map((s) => [
+    const rows = all.map((s) => [
       fmtDate(s.created_at), s.created_by_name, s.contact_name, s.phone, s.source === 'call' ? 'Llamada' : 'Manual', ...fields.map((f) => displayValue(getPath(s.data, f.key), f.options)),
     ].map(esc).join(','));
     downloadFile(`${slug(form.title)}-respuestas.csv`, '\uFEFF' + [header, ...rows].join('\n'), 'text/csv;charset=utf-8');
@@ -448,10 +471,10 @@ function SubmissionsView({ form, onBack, onFill }) {
         <button className="btn-secondary btn-sm" onClick={onBack}><FiArrowLeft /> Volver</button>
         <div className="frm-editor-meta">
           <h2 className="frm-view-title">Respuestas · {form.title}</h2>
-          <p className="frm-view-desc">{subs.length} registros</p>
+          <p className="frm-view-desc">{total.toLocaleString('es-GT')} {total === 1 ? 'registro' : 'registros'}</p>
         </div>
         <div className="frm-editor-actions">
-          <button className="btn-secondary btn-sm" onClick={exportCsv} disabled={!subs.length}><FiDownload /> CSV</button>
+          <button className="btn-secondary btn-sm" onClick={exportCsv} disabled={!total || exporting}><FiDownload /> {exporting ? 'Descargando…' : 'CSV'}</button>
           <button className="btn-primary btn-sm" onClick={onFill}><FiPlay /> Llenar</button>
         </div>
       </div>
@@ -492,6 +515,13 @@ function SubmissionsView({ form, onBack, onFill }) {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      {pages > 1 && (
+        <div className="frm-pager">
+          <button className="btn-secondary btn-sm" disabled={page <= 1} onClick={() => setPage(page - 1)} aria-label="Página anterior"><FiChevronLeft /></button>
+          <span>Página {page} de {pages}</span>
+          <button className="btn-secondary btn-sm" disabled={page >= pages} onClick={() => setPage(page + 1)} aria-label="Página siguiente"><FiChevronRight /></button>
         </div>
       )}
 
