@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -31,9 +32,43 @@ const menuItems = [
   { path: '/configuracion', icon: FiSettings, label: 'Configuración' },
 ];
 
+// Se recuerda si el usuario dejó el menú colapsado.
+const COLLAPSE_KEY = 'hablagt.sidebarCollapsed';
+const readCollapsed = () => { try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; } };
+
+// Entre 769 y 1024 px el CSS fuerza el modo "solo iconos" (ver Sidebar.css).
+const TABLET_RAIL = '(min-width: 769px) and (max-width: 1024px)';
+
 const Sidebar = ({ mobileOpen = false, onNavigate }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(readCollapsed);
+  // Etiqueta flotante con el nombre de la opción en modo "solo iconos".
+  // Se dibuja en <body> porque el menú tiene scroll y la recortaría.
+  const [tip, setTip] = useState(null);
   const location = useLocation();
+
+  const toggleCollapsed = () => {
+    setIsCollapsed((v) => {
+      try { localStorage.setItem(COLLAPSE_KEY, v ? '0' : '1'); } catch { /* sin almacenamiento */ }
+      return !v;
+    });
+    setTip(null);
+  };
+
+  const isRail = () => isCollapsed || window.matchMedia(TABLET_RAIL).matches;
+  const showTip = (e, label) => {
+    if (!isRail()) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    setTip({ label, top: r.top + r.height / 2, left: r.right + 12 });
+  };
+  const hideTip = () => setTip(null);
+  const tipHandlers = (label) => ({
+    onMouseEnter: (e) => showTip(e, label),
+    onMouseLeave: hideTip,
+    onFocus: (e) => showTip(e, label),
+    onBlur: hideTip,
+  });
+
+  useEffect(() => { setTip(null); }, [location.pathname]);
   const navigate = useNavigate();
   const { showLoadingFor } = useLoading();
   const { logout } = useAuth();
@@ -62,6 +97,7 @@ const Sidebar = ({ mobileOpen = false, onNavigate }) => {
   };
 
   return (
+    <>
     <motion.aside
       className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}
       initial={false}
@@ -91,7 +127,9 @@ const Sidebar = ({ mobileOpen = false, onNavigate }) => {
 
         <button
           className="collapse-btn"
-          onClick={() => setIsCollapsed(!isCollapsed)}
+          onClick={toggleCollapsed}
+          aria-label={isCollapsed ? 'Expandir menú' : 'Contraer menú'}
+          title={isCollapsed ? 'Expandir menú' : 'Contraer menú'}
         >
           <motion.div
             animate={{ rotate: isCollapsed ? 180 : 0 }}
@@ -113,6 +151,8 @@ const Sidebar = ({ mobileOpen = false, onNavigate }) => {
                   `nav-link ${isActive ? 'active' : ''}`
                 }
                 onClick={(e) => handleNavClick(e, item.path)}
+                aria-label={item.label}
+                {...tipHandlers(item.label)}
               >
                 <span className="nav-icon">
                   <item.icon />
@@ -145,7 +185,7 @@ const Sidebar = ({ mobileOpen = false, onNavigate }) => {
 
       {/* Footer */}
       <div className="sidebar-footer">
-        <button className="logout-btn" onClick={handleLogout}>
+        <button className="logout-btn" onClick={handleLogout} aria-label="Cerrar sesión" {...tipHandlers('Cerrar sesión')}>
           <span className="nav-icon">
             <FiLogOut />
           </span>
@@ -164,6 +204,14 @@ const Sidebar = ({ mobileOpen = false, onNavigate }) => {
         </button>
       </div>
     </motion.aside>
+
+    {tip && createPortal(
+      <div className="sidebar-tooltip" role="tooltip" style={{ top: tip.top, left: tip.left }}>
+        {tip.label}
+      </div>,
+      document.body,
+    )}
+    </>
   );
 };
 

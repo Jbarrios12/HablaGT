@@ -1184,3 +1184,32 @@
   transform: none;
   box-shadow: none;
 }
+
+/* Celular: los 7 días caben sin desplazar de lado y los filtros bajan de
+   línea en vez de quedar cortados. */
+@media (max-width: 600px) {
+  .agendas-filtros {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    padding-bottom: 0;
+  }
+
+  .calendario-inner {
+    min-width: 0;
+  }
+
+  .dia-header,
+  .dia-cell {
+    min-width: 0;
+  }
+
+  .dia-header {
+    padding: 6px 2px;
+    font-size: 0.62rem;
+  }
+
+  .dia-cell {
+    min-height: 56px;
+    padding: 3px;
+  }
+}

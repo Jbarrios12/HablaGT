@@ -76,11 +76,9 @@
 .stat-title {
   display: block;
   font-size: 0.8rem;
+  line-height: 1.3;
   color: var(--color-gray-500);
   margin-bottom: 6px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .stat-value-row {
@@ -397,8 +395,9 @@
 
 .dashboard .ai-stat {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
   padding: var(--space-3);
   background: var(--color-gray-50);
   border-radius: var(--radius-md);
@@ -424,11 +423,9 @@
 }
 
 .dashboard .ai-stat-label {
-  font-size: 0.65rem;
+  font-size: 0.72rem;
+  line-height: 1.3;
   color: var(--color-gray-500);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* ========================================
@@ -651,7 +648,7 @@
   }
 
   .dashboard .ai-stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .activity-summary {

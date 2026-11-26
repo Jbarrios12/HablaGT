@@ -1,7 +1,10 @@
 .campanas { display: flex; flex-direction: column; }
 
 
-.campanas-filters { display: flex; gap: 12px; margin-bottom: 24px; align-items: center; }
+.campanas-filters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; align-items: center; }
+.campanas-filters > * { min-width: 0; }
+.campanas-filters .search-box { flex: 1 1 220px; }
+.campanas-filters select { max-width: 100%; }
 .campanas-filters select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font-size: 0.875rem; color: var(--text-secondary); }
 .campanas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
 .campana-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.2s; }

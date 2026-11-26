@@ -73,9 +73,25 @@ api.interceptors.response.use(
         window.location.href = "/login";
       }
     }
+    error.message = friendlyMessage(error);
     return Promise.reject(error);
   }
 );
+
+// Mensaje legible en español para errores sin mensaje propio del backend
+// (axios pone "Request failed with status code 429", "Network Error", etc.).
+// Los componentes que leen error.response.data.error.message no cambian.
+function friendlyMessage(error) {
+  const status = error.response?.status;
+  if (!error.response) return "No se pudo conectar con el servidor. Revisa tu conexión.";
+  if (status === 429) return "Demasiadas solicitudes seguidas. Espera unos segundos e inténtalo de nuevo.";
+  const backendMessage = error.response.data?.error?.message;
+  if (backendMessage) return backendMessage;
+  if (status === 403) return "No tienes permiso para hacer esto.";
+  if (status === 404) return "No se encontró lo que buscabas.";
+  if (status >= 500) return "El servidor tuvo un problema. Inténtalo de nuevo en unos minutos.";
+  return error.message;
+}
 
 export const apiBaseURL = baseURL;
 export const apiTenantSlug = tenantSlug;

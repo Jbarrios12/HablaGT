@@ -146,8 +146,10 @@
 
 /* Collapsed state */
 .sidebar.collapsed .sidebar-header {
+  flex-direction: column;
   justify-content: center;
-  padding: var(--space-5) 10px;
+  gap: 10px;
+  padding: var(--space-4) 10px;
 }
 
 .sidebar.collapsed .logo {
@@ -285,4 +287,42 @@
     backdrop-filter: blur(2px);
     z-index: 290;
   }
+}
+
+/* Etiqueta flotante del modo "solo iconos" (se monta en <body>). */
+.sidebar-tooltip {
+  position: fixed;
+  z-index: 1200;
+  transform: translateY(-50%);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-inverse);
+  color: #ffffff;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+  animation: sidebar-tip-in 0.12s ease-out;
+}
+
+.sidebar-tooltip::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  background: inherit;
+  transform: translateY(-50%) rotate(45deg);
+  border-radius: 2px;
+}
+
+@keyframes sidebar-tip-in {
+  from { opacity: 0; transform: translate(-4px, -50%); }
+  to { opacity: 1; transform: translate(0, -50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-tooltip { animation: none; }
 }

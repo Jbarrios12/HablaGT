@@ -44,7 +44,9 @@
 /* Layout principal */
 .contactos-layout {
   display: grid;
-  grid-template-columns: 200px 1fr;
+  /* minmax(0, 1fr): sin esto la columna crece al ancho de su contenido más
+     largo (barra de búsqueda, categorías) y se sale de la pantalla en celular. */
+  grid-template-columns: 200px minmax(0, 1fr);
   gap: 20px;
   flex: 1;
   min-height: 0;
@@ -158,6 +160,7 @@
   flex-direction: column;
   gap: 16px;
   min-height: 0;
+  min-width: 0;
 }
 
 /* Search */
@@ -263,7 +266,7 @@
 /* Grid de contactos */
 .contactos-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: 16px;
   overflow-y: auto;
   padding-right: 4px;
@@ -883,14 +886,18 @@
 ======================================== */
 @media (max-width: 1200px) {
   .contactos-layout {
-    grid-template-columns: 180px 1fr;
+    grid-template-columns: 180px minmax(0, 1fr);
   }
 }
 
 @media (max-width: 900px) {
   .contactos-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 12px;
+  }
+
+  .contactos-sidebar {
+    min-width: 0;
   }
 
   /* En vez de ocultar el filtro de categorías, se convierte en una barra
@@ -942,7 +949,7 @@
 @media (max-width: 600px) {
   .contactos-grid,
   .contactos-list {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     /* deja espacio abajo para que la última tarjeta no quede debajo
        del botón flotante del softphone, siempre fijo en esa esquina */
     padding-bottom: 72px;
