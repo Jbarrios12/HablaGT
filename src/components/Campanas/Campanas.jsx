@@ -993,9 +993,13 @@ function KBDocumentModal({ categories, onClose, onSave }) {
   const [fileError, setFileError] = useState('');
 
   // Archivos de texto: se leen en el navegador y se envía su contenido.
+  const clearFile = (prev) => ({ ...prev, content: '', file_name: undefined, file_type: undefined, file_size: undefined });
+
   const onFile = async (e) => {
     const f = e.target.files?.[0];
     setFileError('');
+    // Un archivo nuevo reemplaza al anterior: si no sirve, no se envía el viejo.
+    setForm(clearFile);
     if (!f) return;
     if (f.size > 2 * 1024 * 1024) { setFileError('El archivo supera 2 MB.'); return; }
     if (!/\.(txt|md|csv)$/i.test(f.name) && !(f.type || '').startsWith('text/')) {
@@ -1019,8 +1023,10 @@ function KBDocumentModal({ categories, onClose, onSave }) {
       setFileError(form.source_type === 'upload' ? 'Elige un archivo con texto.' : 'Escribe el contenido del documento.');
       return;
     }
+    const { description, ...rest } = form;
     onSave({
-      ...form,
+      ...rest,
+      descripcion: description, // el backend espera "descripcion"
       category_id: form.category_id || undefined,
     });
   };
@@ -1043,7 +1049,7 @@ function KBDocumentModal({ categories, onClose, onSave }) {
               </select>
             </label>
             <label>Tipo
-              <select value={form.source_type} onChange={e => { setFileError(''); setForm({ ...form, source_type: e.target.value, content: '' }); }}>
+              <select value={form.source_type} onChange={e => { setFileError(''); setForm({ ...clearFile(form), source_type: e.target.value }); }}>
                 <option value="manual">Escribir texto</option>
                 <option value="upload">Archivo de texto</option>
               </select>

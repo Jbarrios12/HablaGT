@@ -1,3 +1,4 @@
+import { csvCell } from '../../lib/csvCell';
 // Importar / exportar contactos en CSV (se abre bien en Excel).
 
 const MAX_IMPORT_ROWS = 2000;
@@ -87,7 +88,7 @@ export function parseContactsCsv(text, tagKeyFor) {
   return { contacts, errors, unknownHeaders };
 }
 
-const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+const esc = csvCell;
 
 /** Descarga los contactos como CSV. `tagLabel(key)` traduce claves de etiqueta. */
 export function downloadContactsCsv(contactos, tagLabel) {

@@ -25,29 +25,44 @@ function parseFrame(block) {
 // openEventStream connects and invokes onEvent({ event, data }) for each
 // frame. Returns a function that closes the connection. It auto-reconnects
 // with backoff until close() is called.
-export function openEventStream({ url, token, tenantSlug, onEvent, onOpen, onError }) {
+//
+// token/tenantSlug can be values or functions: functions are read on every
+// (re)connect, so a long-lived stream picks up a renewed token. On a 401 it
+// awaits onUnauthorized() (e.g. refresh the token) and retries right away.
+export function openEventStream({ url, token, tenantSlug, onEvent, onOpen, onError, onUnauthorized }) {
+  const read = (v) => (typeof v === 'function' ? v() : v);
   let controller = null;
   let closed = false;
   let backoff = 1000;
+  let unauthorizedRetry = false;
   const maxBackoff = 30000;
 
   const connect = async () => {
     if (closed) return;
     controller = new AbortController();
+    let retryNow = false;
     try {
+      const tok = read(token);
+      const slug = read(tenantSlug);
       const res = await fetch(url, {
         method: 'GET',
         headers: {
           Accept: 'text/event-stream',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenantSlug ? { 'X-Tenant-Slug': tenantSlug } : {}),
+          ...(tok ? { Authorization: `Bearer ${tok}` } : {}),
+          ...(slug ? { 'X-Tenant-Slug': slug } : {}),
         },
         signal: controller.signal,
       });
+      if (res.status === 401 && onUnauthorized && !unauthorizedRetry) {
+        unauthorizedRetry = true; // one immediate retry; then normal backoff
+        retryNow = Boolean(await onUnauthorized());
+        throw new Error('SSE responded 401');
+      }
       if (!res.ok || !res.body) {
         throw new Error(`SSE responded ${res.status}`);
       }
       backoff = 1000; // reset after a successful connect
+      unauthorizedRetry = false;
       if (onOpen) onOpen();
 
       const reader = res.body.getReader();
@@ -68,6 +83,10 @@ export function openEventStream({ url, token, tenantSlug, onEvent, onOpen, onErr
     } catch (err) {
       if (closed || (err && err.name === 'AbortError')) return;
       if (onError) onError(err);
+    }
+    if (retryNow && !closed) {
+      connect();
+      return;
     }
     // Schedule a reconnect unless we were explicitly closed.
     if (!closed) {

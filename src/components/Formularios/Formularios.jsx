@@ -5,6 +5,7 @@ import {
   FiArrowLeft, FiSave, FiDownload, FiUpload, FiEye, FiCode, FiCopy,
 } from 'react-icons/fi';
 import { Form, FormBuilder, Utils } from '@formio/react';
+import { csvCell } from '../../lib/csvCell';
 import { formService, formSubmissionService } from '../../services';
 import { useToast } from '../../context/ToastContext';
 import { builderOptions, formOptions, FORM_TEMPLATES } from './formioSetup';
@@ -433,7 +434,7 @@ function SubmissionsView({ form, onBack, onFill }) {
   };
 
   const exportCsv = () => {
-    const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const esc = csvCell;
     const header = ['Fecha', 'Capturado por', 'Contacto', 'Teléfono', 'Origen', ...fields.map((f) => f.label)].map(esc).join(',');
     const rows = subs.map((s) => [
       fmtDate(s.created_at), s.created_by_name, s.contact_name, s.phone, s.source === 'call' ? 'Llamada' : 'Manual', ...fields.map((f) => displayValue(getPath(s.data, f.key), f.options)),

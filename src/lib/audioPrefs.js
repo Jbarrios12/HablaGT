@@ -1,10 +1,16 @@
 import { agentSelfService } from "../services";
+import { tokenStorage } from "./tokenStorage";
 
 // Configuración de audio del agente (backend: /agents/me/audio-config).
 // Se guarda una copia local para que el audio de la Operadora IA la lea al
 // instante, sin esperar a la red cuando arranca una llamada.
 
-const CACHE_KEY = "hablagt.audioConfig";
+// Una copia por usuario: en un equipo compartido, la del agente anterior
+// no se aplica al siguiente.
+const cacheKey = () => {
+  const u = tokenStorage.getUser();
+  return `hablagt.audioConfig.${u?.id || u?.usuario || "anon"}`;
+};
 
 export const AUDIO_DEFAULTS = {
   microfono: "default",
@@ -28,14 +34,17 @@ const normalize = (c = {}) => ({
 /** Lectura inmediata (copia local o valores por defecto). */
 export function getAudioConfig() {
   try {
-    return normalize(JSON.parse(localStorage.getItem(CACHE_KEY)) || {});
+    return normalize(JSON.parse(localStorage.getItem(cacheKey())) || {});
   } catch {
     return { ...AUDIO_DEFAULTS };
   }
 }
 
 const cache = (cfg) => {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify(cfg)); } catch { /* sin almacenamiento */ }
+  try {
+    localStorage.setItem(cacheKey(), JSON.stringify(cfg));
+    localStorage.removeItem("hablagt.audioConfig"); // copia antigua, compartida
+  } catch { /* sin almacenamiento */ }
 };
 
 /** Carga desde el backend (si el agente aún no guardó nada, valores por defecto). */
@@ -44,8 +53,14 @@ export async function loadAudioConfig() {
     const cfg = normalize(await agentSelfService.getAudioConfig());
     cache(cfg);
     return cfg;
-  } catch {
-    return getAudioConfig();
+  } catch (e) {
+    // 404: el agente aún no guardó nada.
+    if (e?.response?.status === 404) {
+      const cfg = { ...AUDIO_DEFAULTS };
+      cache(cfg);
+      return cfg;
+    }
+    return getAudioConfig(); // sin red: la última copia de este usuario
   }
 }
 

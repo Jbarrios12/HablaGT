@@ -14,7 +14,7 @@ api.interceptors.request.use((config) => {
   if (access) {
     config.headers.Authorization = `Bearer ${access}`;
   }
-  const effectiveTenantSlug = tokenStorage.getTenantOverride() || tenantSlug;
+  const effectiveTenantSlug = currentTenantSlug();
   if (effectiveTenantSlug) {
     config.headers["X-Tenant-Slug"] = effectiveTenantSlug;
   }
@@ -22,6 +22,37 @@ api.interceptors.request.use((config) => {
 });
 
 let refreshing = null;
+
+/** Empresa (tenant) a la que van las peticiones: la de la impersonación si hay. */
+export const currentTenantSlug = () => tokenStorage.getTenantOverride() || tenantSlug;
+
+/**
+ * Renueva el token de acceso con el refresh token. Devuelve el nuevo token,
+ * o null si no se pudo (sin refresh token o sesión vencida). Comparte la
+ * petición en curso para no pedir dos renovaciones a la vez.
+ */
+export async function refreshAccessToken() {
+  const refresh = tokenStorage.getRefresh();
+  if (!refresh) return null;
+  try {
+    refreshing = refreshing || axios.post(
+      `${baseURL}/auth/refresh`,
+      { refresh_token: refresh },
+      { headers: { "X-Tenant-Slug": tenantSlug } }
+    );
+    const res = await refreshing;
+    // The refresh endpoint returns the shared envelope
+    // ({ success, data: { access_token, ... } }), while login returns
+    // the tokens at the top level. Accept either shape.
+    const body = res.data?.data ?? res.data;
+    if (!body?.access_token) return null;
+    tokenStorage.setAccess(body.access_token);
+    if (body.refresh_token) tokenStorage.setTokens(body.access_token, body.refresh_token);
+    return body.access_token;
+  } finally {
+    refreshing = null;
+  }
+}
 
 api.interceptors.response.use(
   (response) => {
@@ -40,30 +71,14 @@ api.interceptors.response.use(
     const original = error.config || {};
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true;
-      const refresh = tokenStorage.getRefresh();
-      if (refresh) {
+      if (tokenStorage.getRefresh()) {
         try {
-          refreshing = refreshing || axios.post(
-            `${baseURL}/auth/refresh`,
-            { refresh_token: refresh },
-            { headers: { "X-Tenant-Slug": tenantSlug } }
-          );
-          const res = await refreshing;
-          refreshing = null;
-          // The refresh endpoint returns the shared envelope
-          // ({ success, data: { access_token, ... } }), while login returns
-          // the tokens at the top level. Accept either shape.
-          const body = res.data?.data ?? res.data;
-          if (body?.access_token) {
-            tokenStorage.setAccess(body.access_token);
-            if (body?.refresh_token) {
-              tokenStorage.setTokens(body.access_token, body.refresh_token);
-            }
-            original.headers.Authorization = `Bearer ${body.access_token}`;
+          const access = await refreshAccessToken();
+          if (access) {
+            original.headers.Authorization = `Bearer ${access}`;
             return api(original);
           }
-        } catch (e) {
-          refreshing = null;
+        } catch {
           tokenStorage.clear();
           if (typeof window !== "undefined" && window.location.pathname !== "/login") {
             window.location.href = "/login";

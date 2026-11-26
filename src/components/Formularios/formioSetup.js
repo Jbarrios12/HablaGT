@@ -4,6 +4,17 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import '@formio/js/dist/formio.full.min.css';
+import { Formio } from '@formio/js';
+import { Evaluator as CoreEvaluator } from '@formio/core/utils';
+
+// Seguridad: Form.io ejecuta como JavaScript lo que un formulario trae en
+// "calculateValue", "customConditional", "validate.custom", lógica, etc.
+// Cualquier usuario puede crear formularios, y quien los abre (un supervisor
+// en la vista previa, un agente en una llamada) ejecutaría ese código con su
+// sesión. Con noeval no se ejecuta nada: siguen funcionando los campos, las
+// validaciones normales, las condiciones simples y JSONLogic.
+Formio.Evaluator.noeval = true;
+CoreEvaluator.noeval = true;
 
 // Traducciones para el render de formularios (validaciones, botones, wizard).
 export const formioI18n = {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { getAudioConfig } from "../lib/audioPrefs";
+import { loadAudioConfig } from "../lib/audioPrefs";
 import { RealtimeAudioClient } from "../lib/realtimeAudio";
 import { softphoneService, realtimeService } from "../services";
 
@@ -35,9 +35,11 @@ export function useRealtimeAudio(callId) {
         return;
       }
       const url = softphoneService.audioSocketURL(callId);
+      // La del backend (la guardada en cualquier equipo); sin red, la copia local.
+      const audio = await loadAudioConfig();
       const client = new RealtimeAudioClient({
         url,
-        audio: getAudioConfig(),
+        audio,
         onReady: () => setStatus("open"),
         onTranscript: (msg) => {
           setTranscript((prev) => [
