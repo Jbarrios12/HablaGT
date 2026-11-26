@@ -15,6 +15,7 @@ import TurnSettingsFields, { TURN_DEFAULTS } from './TurnSettingsFields';
 import AgentMessagesFields from './AgentMessagesFields';
 import VoiceFields from '../common/VoiceFields';
 import { useModules } from '../../context/ModulesContext';
+import { extractText, ExtractError, KB_ACCEPT } from '../../lib/extractText';
 import './Campanas.css';
 
 const TIPO_LABELS = { inbound: 'Entrante', outbound: 'Saliente', task: 'Tarea' };
@@ -992,7 +993,10 @@ function KBDocumentModal({ categories, onClose, onSave }) {
   const [form, setForm] = useState({ title: '', description: '', category_id: '', source_type: 'manual', content: '' });
   const [fileError, setFileError] = useState('');
 
-  // Archivos de texto: se leen en el navegador y se envía su contenido.
+  const [reading, setReading] = useState('');
+
+  // PDF, Word (.docx) y texto: el texto se extrae en el navegador y se
+  // envía al backend, que lo divide en fragmentos para la IA.
   const clearFile = (prev) => ({ ...prev, content: '', file_name: undefined, file_type: undefined, file_size: undefined });
 
   const onFile = async (e) => {
@@ -1001,24 +1005,27 @@ function KBDocumentModal({ categories, onClose, onSave }) {
     // Un archivo nuevo reemplaza al anterior: si no sirve, no se envía el viejo.
     setForm(clearFile);
     if (!f) return;
-    if (f.size > 2 * 1024 * 1024) { setFileError('El archivo supera 2 MB.'); return; }
-    if (!/\.(txt|md|csv)$/i.test(f.name) && !(f.type || '').startsWith('text/')) {
-      setFileError('Por ahora solo archivos de texto (.txt, .md, .csv). Para PDF o Word, copia el texto y usa "Escribir texto".');
-      return;
+    setReading('Leyendo archivo…');
+    try {
+      const { text } = await extractText(f, (page, total) => setReading(`Leyendo página ${page} de ${total}…`));
+      setForm((prev) => ({
+        ...prev,
+        content: text,
+        file_name: f.name,
+        file_type: f.type || 'application/octet-stream',
+        file_size: f.size,
+        title: prev.title || f.name.replace(/\.[^.]+$/, ''),
+      }));
+    } catch (err) {
+      setFileError(err instanceof ExtractError ? err.message : 'No se pudo leer el archivo.');
+    } finally {
+      setReading('');
     }
-    const text = await f.text();
-    setForm((prev) => ({
-      ...prev,
-      content: text,
-      file_name: f.name,
-      file_type: f.type || 'text/plain',
-      file_size: f.size,
-      title: prev.title || f.name.replace(/\.[^.]+$/, ''),
-    }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (reading) return;
     if (!form.content.trim()) {
       setFileError(form.source_type === 'upload' ? 'Elige un archivo con texto.' : 'Escribe el contenido del documento.');
       return;
@@ -1051,7 +1058,7 @@ function KBDocumentModal({ categories, onClose, onSave }) {
             <label>Tipo
               <select value={form.source_type} onChange={e => { setFileError(''); setForm({ ...clearFile(form), source_type: e.target.value }); }}>
                 <option value="manual">Escribir texto</option>
-                <option value="upload">Archivo de texto</option>
+                <option value="upload">Subir archivo (PDF, Word o texto)</option>
               </select>
             </label>
             {form.source_type === 'manual' && (
@@ -1059,15 +1066,16 @@ function KBDocumentModal({ categories, onClose, onSave }) {
                 placeholder="Ej.: Horario de atención, precios, preguntas frecuentes… La Operadora IA usará este texto para responder." /></label>
             )}
             {form.source_type === 'upload' && (
-              <label>Archivo (.txt, .md, .csv)
-                <input type="file" accept=".txt,.md,.csv,text/plain,text/markdown,text/csv" onChange={onFile} />
-                {form.file_name && !fileError && <span className="help-text">{form.file_name} · {form.content.length.toLocaleString('es-GT')} caracteres</span>}
+              <label>Archivo (PDF, Word .docx, .txt, .md o .csv · hasta 15 MB)
+                <input type="file" accept={KB_ACCEPT} onChange={onFile} disabled={!!reading} />
+                {reading && <span className="help-text" role="status">{reading}</span>}
+                {form.file_name && !fileError && !reading && <span className="help-text">{form.file_name} · {form.content.length.toLocaleString('es-GT')} caracteres de texto</span>}
               </label>
             )}
             {fileError && <p className="kb-form-error" role="alert">{fileError}</p>}
           </div>
           <div className="modal-footer">
-            <button type="submit" className="btn btn-primary">Crear</button>
+            <button type="submit" className="btn btn-primary" disabled={!!reading}>Crear</button>
             <button type="button" className="btn btn-outline" onClick={onClose}>Cancelar</button>
           </div>
         </form>
