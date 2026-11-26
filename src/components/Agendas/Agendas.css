@@ -1213,3 +1213,17 @@
     padding: 3px;
   }
 }
+
+/* Celular: espacio al final de la ficha para que el botón flotante del
+   teléfono no tape "Marcar como completado". */
+@media (max-width: 600px) {
+  .evento-detalle .detalle-content {
+    padding-bottom: 84px;
+  }
+}
+
+.detalle-sin-asignar {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}

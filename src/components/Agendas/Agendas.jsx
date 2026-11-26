@@ -748,7 +748,9 @@ const Agendas = () => {
 
                 <div className="detalle-section">
                   <h4>Asignado a</h4>
-                  <span className="agente-badge">{eventoSeleccionado.agente}</span>
+                  {eventoSeleccionado.agente
+                    ? <span className="agente-badge">{eventoSeleccionado.agente}</span>
+                    : <p className="detalle-sin-asignar">Sin asignar</p>}
                 </div>
 
                 <div className="detalle-estado">

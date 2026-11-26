@@ -32,7 +32,13 @@
 .detail-edit textarea { min-height: 80px; resize: vertical; }
 .edit-actions { display: flex; gap: 8px; margin-top: 8px; }
 
-.detail-tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--surface-2); border-radius: 10px; padding: 4px; }
+.detail-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 20px; background: var(--surface-2); border-radius: 10px; padding: 4px; }
+/* Celular: 5–6 pestañas en 2 columnas (antes se cortaban y las últimas
+   quedaban inalcanzables). */
+@media (max-width: 640px) {
+  .detail-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .detail-tabs button { padding: 10px 8px; font-size: 0.82rem; min-width: 0; }
+}
 .detail-tabs button { flex: 1; padding: 10px 16px; border: none; background: transparent; border-radius: 8px; cursor: pointer; font-size: 0.875rem; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; }
 .detail-tabs button.active { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 .detail-tabs button:hover:not(.active) { color: var(--text-secondary); }
