@@ -438,7 +438,7 @@ function SubmissionsView({ form, onBack, onFill }) {
     const rows = subs.map((s) => [
       fmtDate(s.created_at), s.created_by_name, s.contact_name, s.phone, s.source === 'call' ? 'Llamada' : 'Manual', ...fields.map((f) => displayValue(getPath(s.data, f.key), f.options)),
     ].map(esc).join(','));
-    downloadFile(`${slug(form.title)}-respuestas.csv`, '﻿' + [header, ...rows].join('\n'), 'text/csv;charset=utf-8');
+    downloadFile(`${slug(form.title)}-respuestas.csv`, '\uFEFF' + [header, ...rows].join('\n'), 'text/csv;charset=utf-8');
   };
 
   return (

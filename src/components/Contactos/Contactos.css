@@ -1182,3 +1182,21 @@
   transform: none;
   box-shadow: none;
 }
+
+.contactos-template-link {
+  border: none;
+  background: none;
+  padding: 0 4px;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--brand-text);
+  cursor: pointer;
+  align-self: center;
+}
+.contactos-template-link:hover { text-decoration: underline; }
+
+.contactos .historial-icon.perdida {
+  background: var(--danger-soft);
+  color: var(--danger);
+}

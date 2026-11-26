@@ -118,6 +118,33 @@ const Softphone = ({ isOpen, onToggle }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
+  // Puente con otras pantallas (p. ej. Hablaphone): el softphone es el único
+  // dueño de la llamada real. Publica su estado y acepta órdenes, para que
+  // los controles de otras pantallas actúen sobre la llamada de verdad.
+  const bridgeRef = useRef({});
+  bridgeRef.current = {
+    state: { callState, numero: phoneNumber, duration: callDuration, muted: isMuted, onHold: isOnHold },
+    hangup: () => handleHangup(),
+    mute: () => handleMute(),
+    hold: () => handleHold(),
+    transfer: () => handleTransfer(),
+  };
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('hablagt:softphone:state', { detail: bridgeRef.current.state }));
+  }, [callState, phoneNumber, callDuration, isMuted, isOnHold]);
+  useEffect(() => {
+    const onCommand = (e) => {
+      const action = e.detail?.action;
+      if (action === 'query') {
+        window.dispatchEvent(new CustomEvent('hablagt:softphone:state', { detail: bridgeRef.current.state }));
+      } else if (['hangup', 'mute', 'hold', 'transfer'].includes(action)) {
+        bridgeRef.current[action]();
+      }
+    };
+    window.addEventListener('hablagt:softphone:command', onCommand);
+    return () => window.removeEventListener('hablagt:softphone:command', onCommand);
+  }, []);
+
   const stopPolling = () => {
     if (pollRef.current) {
       clearInterval(pollRef.current);

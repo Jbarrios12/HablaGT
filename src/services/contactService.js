@@ -5,6 +5,18 @@ export const contactService = {
     const { data } = await api.get("/contacts", { params });
     return data;
   },
+  // Todos los contactos, en bloques (el backend devuelve 50 por defecto).
+  async listAll(params = {}, pageSize = 500, maxPages = 40) {
+    const all = [];
+    for (let page = 1; page <= maxPages; page++) {
+      const { data } = await api.get("/contacts", { params: { ...params, page, page_size: pageSize } });
+      const items = data?.items || data || [];
+      all.push(...items);
+      const total = data?.total ?? all.length;
+      if (items.length < pageSize || all.length >= total) break;
+    }
+    return all;
+  },
   async get(id) {
     const { data } = await api.get(`/contacts/${id}`);
     return data;

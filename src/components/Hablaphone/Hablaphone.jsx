@@ -60,11 +60,25 @@ const Hablaphone = () => {
   const [estadoAgente, setEstadoAgente] = useState('disponible');
   const [showEstados, setShowEstados] = useState(false);
   const [numeroMarcado, setNumeroMarcado] = useState('');
-  const [enLlamada, setEnLlamada] = useState(false);
-  const [llamadaActiva, setLlamadaActiva] = useState(null);
-  const [silenciado, setsilenciado] = useState(false);
-  const [enEspera, setEnEspera] = useState(false);
-  const [tiempoLlamada, setTiempoLlamada] = useState(0);
+  // Estado real de la llamada, publicado por el softphone (único dueño de la
+  // llamada). Esta pantalla lo muestra y le envía órdenes; antes tenía su
+  // propia llamada simulada y "Colgar" no cortaba la llamada real.
+  const [sp, setSp] = useState({ callState: 'idle' });
+  useEffect(() => {
+    const onState = (e) => setSp(e.detail || { callState: 'idle' });
+    window.addEventListener('hablagt:softphone:state', onState);
+    window.dispatchEvent(new CustomEvent('hablagt:softphone:command', { detail: { action: 'query' } }));
+    return () => window.removeEventListener('hablagt:softphone:state', onState);
+  }, []);
+  const softphone = (action) =>
+    window.dispatchEvent(new CustomEvent('hablagt:softphone:command', { detail: { action } }));
+  const enLlamada = sp.callState === 'calling' || sp.callState === 'connected';
+  const llamadaActiva = enLlamada
+    ? { numero: sp.numero, contacto: sp.callState === 'calling' ? 'Marcando…' : 'Conectado' }
+    : null;
+  const silenciado = Boolean(sp.muted);
+  const enEspera = Boolean(sp.onHold);
+  const tiempoLlamada = sp.duration || 0;
 
   // Historial
   const [historial, setHistorial] = useState([]);
@@ -192,10 +206,7 @@ const Hablaphone = () => {
 
   const handleLlamar = async () => {
     if (numeroMarcado.length === 0) return;
-    setEnLlamada(true);
-    setLlamadaActiva({ numero: numeroMarcado, contacto: 'Marcando...', tipo: 'saliente' });
-    setTiempoLlamada(0);
-    setEstadoAgente('en_llamada');
+    // El softphone hace la llamada real y avisa su estado (ver arriba).
     window.dispatchEvent(new CustomEvent('hablagt:softphone:call', { detail: { numero: numeroMarcado } }));
   };
 
@@ -209,17 +220,6 @@ const Hablaphone = () => {
     autoAnswer: false,
     grabacionAuto: true
   });
-
-  // Timer de llamada
-  useEffect(() => {
-    let interval;
-    if (enLlamada) {
-      interval = setInterval(() => {
-        setTiempoLlamada(prev => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [enLlamada]);
 
   const formatTiempo = (segundos) => {
     const mins = Math.floor(segundos / 60);
@@ -236,14 +236,7 @@ const Hablaphone = () => {
     setNumeroMarcado(prev => prev.slice(0, -1));
   };
 
-  const handleColgar = () => {
-    setEnLlamada(false);
-    setLlamadaActiva(null);
-    setTiempoLlamada(0);
-    setsilenciado(false);
-    setEnEspera(false);
-    setEstadoAgente('disponible');
-  };
+  const handleColgar = () => softphone('hangup');
 
   // Filtrar historial
   const historialFiltrado = historial.filter(llamada => {
@@ -427,19 +420,19 @@ const Hablaphone = () => {
                       <div className="llamada-controles">
                         <button
                           className={`control-btn ${silenciado ? 'active' : ''}`}
-                          onClick={() => setsilenciado(!silenciado)}
+                          onClick={() => softphone('mute')}
                         >
                           {silenciado ? <FiMicOff /> : <FiMic />}
                           <span>{silenciado ? 'Activar' : 'Silenciar'}</span>
                         </button>
                         <button
                           className={`control-btn ${enEspera ? 'active' : ''}`}
-                          onClick={() => setEnEspera(!enEspera)}
+                          onClick={() => softphone('hold')}
                         >
                           {enEspera ? <FiPlay /> : <FiPause />}
                           <span>{enEspera ? 'Continuar' : 'Espera'}</span>
                         </button>
-                        <button className="control-btn">
+                        <button className="control-btn" onClick={() => softphone('transfer')}>
                           <FiUsers />
                           <span>Transferir</span>
                         </button>

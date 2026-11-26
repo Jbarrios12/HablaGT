@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   FiSearch,
   FiBell,
@@ -30,6 +30,16 @@ const Header = ({ onMenuClick }) => {
   const presenceRef = useRef(null);
   const userMenuRef = useRef(null);
   const location = useLocation();
+  const navigate = useNavigate();
+  const [search, setSearch] = useState('');
+
+  // El buscador del header busca contactos: lleva a Contactos con el filtro.
+  const submitSearch = (e) => {
+    e.preventDefault();
+    const q = search.trim();
+    navigate(q ? `/contactos?q=${encodeURIComponent(q)}` : '/contactos');
+    setSearch('');
+  };
   const [showPresence, setShowPresence] = useState(false);
   const { presence, current: currentPresence, changePresence } = usePresence();
 
@@ -121,10 +131,16 @@ const Header = ({ onMenuClick }) => {
         <button className="icon-btn menu-toggle" onClick={onMenuClick} aria-label="Abrir menú">
           <FiMenu />
         </button>
-        <div className="header-search">
+        <form className="header-search" role="search" onSubmit={submitSearch}>
           <FiSearch className="search-icon" />
-          <input type="text" placeholder="Buscar..." aria-label="Buscar" />
-        </div>
+          <input
+            type="search"
+            placeholder="Buscar contactos…"
+            aria-label="Buscar contactos"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </form>
       </div>
 
       <div className="header-right">
@@ -220,9 +236,6 @@ const Header = ({ onMenuClick }) => {
                     </div>
                   ))}
                 </div>
-                <div className="dropdown-footer">
-                  <a href="#">Ver todas las notificaciones</a>
-                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -255,14 +268,14 @@ const Header = ({ onMenuClick }) => {
                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
                 transition={{ duration: 0.15 }}
               >
-                <a href="/configuracion" className="menu-item">
+                <Link to="/configuracion" className="menu-item">
                   <FiUser />
                   <span>Mi Perfil</span>
-                </a>
-                <a href="/configuracion" className="menu-item">
+                </Link>
+                <Link to="/configuracion" className="menu-item">
                   <FiSettings />
                   <span>Configuración</span>
-                </a>
+                </Link>
                 <div className="menu-divider"></div>
                 <a
                   href="#"
