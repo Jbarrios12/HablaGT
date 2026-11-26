@@ -24,10 +24,20 @@ const slug = (s) => (s || 'formulario').toLowerCase().normalize('NFD')
   .replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
 // Campos con valor (excluye botones y layouts) para armar la tabla de respuestas.
+// Opciones valor → texto de radio, casillas múltiples y listas fijas.
+const optionLabels = (c) => {
+  const list = c.type === 'select' ? c.data?.values : c.values;
+  if (!Array.isArray(list) || !list.length) return null;
+  return Object.fromEntries(list.map((o) => [String(o.value), o.label ?? String(o.value)]));
+};
+
+// Campos con valor (excluye botones y layouts) para armar la tabla de respuestas.
 const inputFields = (schema) => {
   const fields = [];
   Utils.eachComponent(schema?.components || [], (c, path) => {
-    if (c.input && c.type !== 'button') fields.push({ key: path || c.key, label: c.label || c.key });
+    if (c.input && c.type !== 'button') {
+      fields.push({ key: path || c.key, label: c.label || c.key, options: optionLabels(c) });
+    }
   });
   return fields;
 };
@@ -45,17 +55,21 @@ const apiError = (e, fallback) => e?.response?.data?.error?.message || e?.messag
 
 const getPath = (obj, path) => path.split('.').reduce((o, k) => (o == null ? o : o[k]), obj);
 
-const displayValue = (v) => {
+// Texto legible de un valor. `options` (valor → texto) traduce opciones.
+const displayValue = (v, options) => {
+  const label = (x) => (options && options[String(x)] != null ? options[String(x)] : String(x));
   if (v == null || v === '') return '';
   if (typeof v === 'boolean') return v ? 'Sí' : 'No';
-  if (Array.isArray(v)) return v.map(displayValue).join(', ');
+  if (Array.isArray(v)) return v.map((x) => displayValue(x, options)).join(', ');
   if (typeof v === 'object') {
-    const checked = Object.entries(v).filter(([, on]) => on === true).map(([k]) => k);
-    return checked.length && checked.length === Object.values(v).filter((x) => typeof x === 'boolean').length
-      ? checked.join(', ')
-      : JSON.stringify(v);
+    const entries = Object.entries(v);
+    // Casillas múltiples: { valor: true|false, ... } → las marcadas.
+    if (entries.length && entries.every(([, on]) => typeof on === 'boolean')) {
+      return entries.filter(([, on]) => on).map(([k]) => label(k)).join(', ');
+    }
+    return JSON.stringify(v);
   }
-  return String(v);
+  return label(v);
 };
 
 export default function Formularios() {
@@ -422,7 +436,7 @@ function SubmissionsView({ form, onBack, onFill }) {
     const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const header = ['Fecha', 'Capturado por', 'Contacto', 'Teléfono', 'Origen', ...fields.map((f) => f.label)].map(esc).join(',');
     const rows = subs.map((s) => [
-      fmtDate(s.created_at), s.created_by_name, s.contact_name, s.phone, s.source === 'call' ? 'Llamada' : 'Manual', ...fields.map((f) => displayValue(getPath(s.data, f.key))),
+      fmtDate(s.created_at), s.created_by_name, s.contact_name, s.phone, s.source === 'call' ? 'Llamada' : 'Manual', ...fields.map((f) => displayValue(getPath(s.data, f.key), f.options)),
     ].map(esc).join(','));
     downloadFile(`${slug(form.title)}-respuestas.csv`, '﻿' + [header, ...rows].join('\n'), 'text/csv;charset=utf-8');
   };
@@ -468,7 +482,7 @@ function SubmissionsView({ form, onBack, onFill }) {
                     {s.contact_name || s.phone || '—'}
                     {s.source === 'call' && <span className="frm-tag-call">Llamada</span>}
                   </td>
-                  {fields.map((f) => <td key={f.key}>{displayValue(getPath(s.data, f.key))}</td>)}
+                  {fields.map((f) => <td key={f.key}>{displayValue(getPath(s.data, f.key), f.options)}</td>)}
                   <td className="nowrap">
                     <button className="btn-icon edit" title="Ver" onClick={() => setViewing(s)}><FiEye /></button>
                     <button className="btn-icon delete" title="Eliminar" onClick={() => remove(s)}><FiTrash2 /></button>
