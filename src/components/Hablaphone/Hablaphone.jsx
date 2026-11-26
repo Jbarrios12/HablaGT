@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { cdrService, agentSelfService } from '../../services';
 import { checkRecording, recordingSrc } from '../../lib/recordings';
+import AudioSettings from './AudioSettings';
 import { useLoading } from '../../context/LoadingContext';
 import { useToast } from '../../context/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,24 +18,17 @@ import {
   FiPlay,
   FiUsers,
   FiClock,
-  FiCalendar,
   FiSearch,
-  FiFilter,
   FiSettings,
-  FiVolume2,
-  FiHeadphones,
   FiActivity,
   FiTrendingUp,
   FiBarChart2,
   FiList,
-  FiGrid,
   FiUser,
   FiCheck,
   FiX,
   FiChevronDown,
-  FiRefreshCw,
-  FiDownload,
-  FiExternalLink
+  FiRefreshCw
 } from 'react-icons/fi';
 import './Hablaphone.css';
 
@@ -215,16 +209,6 @@ const Hablaphone = () => {
     window.dispatchEvent(new CustomEvent('hablagt:softphone:call', { detail: { numero: numeroMarcado } }));
   };
 
-  // Configuración
-  const [configAudio, setConfigAudio] = useState({
-    microfono: 'default',
-    altavoz: 'default',
-    volumenMic: 80,
-    volumenAltavoz: 70,
-    notificaciones: true,
-    autoAnswer: false,
-    grabacionAuto: true
-  });
 
   const formatTiempo = (segundos) => {
     const mins = Math.floor(segundos / 60);
@@ -704,129 +688,7 @@ const Hablaphone = () => {
               className="tab-configuracion"
             >
               <div className="config-grid">
-                {/* Audio */}
-                <div className="config-section">
-                  <h3>
-                    <FiHeadphones />
-                    Dispositivos de Audio
-                  </h3>
-
-                  <div className="config-group">
-                    <label>
-                      <FiMic />
-                      Micrófono
-                    </label>
-                    <select
-                      value={configAudio.microfono}
-                      onChange={(e) => setConfigAudio({...configAudio, microfono: e.target.value})}
-                    >
-                      <option value="default">Micrófono predeterminado</option>
-                      <option value="headset">Headset USB</option>
-                      <option value="webcam">Micrófono Webcam</option>
-                    </select>
-                  </div>
-
-                  <div className="config-group">
-                    <label>
-                      <FiVolume2 />
-                      Altavoz
-                    </label>
-                    <select
-                      value={configAudio.altavoz}
-                      onChange={(e) => setConfigAudio({...configAudio, altavoz: e.target.value})}
-                    >
-                      <option value="default">Altavoz predeterminado</option>
-                      <option value="headset">Headset USB</option>
-                      <option value="speakers">Altavoces externos</option>
-                    </select>
-                  </div>
-
-                  <div className="config-group">
-                    <label>Volumen Micrófono</label>
-                    <div className="volume-control">
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={configAudio.volumenMic}
-                        onChange={(e) => setConfigAudio({...configAudio, volumenMic: parseInt(e.target.value)})}
-                      />
-                      <span>{configAudio.volumenMic}%</span>
-                    </div>
-                  </div>
-
-                  <div className="config-group">
-                    <label>Volumen Altavoz</label>
-                    <div className="volume-control">
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={configAudio.volumenAltavoz}
-                        onChange={(e) => setConfigAudio({...configAudio, volumenAltavoz: parseInt(e.target.value)})}
-                      />
-                      <span>{configAudio.volumenAltavoz}%</span>
-                    </div>
-                  </div>
-
-                  <button className="btn-test-audio">
-                    <FiPlay />
-                    Probar Audio
-                  </button>
-                </div>
-
-                {/* Preferencias */}
-                <div className="config-section">
-                  <h3>
-                    <FiSettings />
-                    Preferencias
-                  </h3>
-
-                  <div className="config-toggle">
-                    <div className="toggle-info">
-                      <span className="toggle-label">Notificaciones de llamada</span>
-                      <span className="toggle-desc">Mostrar notificación en llamadas entrantes</span>
-                    </div>
-                    <label className="switch">
-                      <input
-                        type="checkbox"
-                        checked={configAudio.notificaciones}
-                        onChange={(e) => setConfigAudio({...configAudio, notificaciones: e.target.checked})}
-                      />
-                      <span className="slider"></span>
-                    </label>
-                  </div>
-
-                  <div className="config-toggle">
-                    <div className="toggle-info">
-                      <span className="toggle-label">Auto-respuesta</span>
-                      <span className="toggle-desc">Contestar automáticamente después de 3 segundos</span>
-                    </div>
-                    <label className="switch">
-                      <input
-                        type="checkbox"
-                        checked={configAudio.autoAnswer}
-                        onChange={(e) => setConfigAudio({...configAudio, autoAnswer: e.target.checked})}
-                      />
-                      <span className="slider"></span>
-                    </label>
-                  </div>
-
-                  <div className="config-toggle">
-                    <div className="toggle-info">
-                      <span className="toggle-label">Grabación automática</span>
-                      <span className="toggle-desc">Grabar todas las llamadas automáticamente</span>
-                    </div>
-                    <label className="switch">
-                      <input
-                        type="checkbox"
-                        checked={configAudio.grabacionAuto}
-                        onChange={(e) => setConfigAudio({...configAudio, grabacionAuto: e.target.checked})}
-                      />
-                      <span className="slider"></span>
-                    </label>
-                  </div>
-                </div>
+                <AudioSettings />
 
                 {/* Cuenta SIP */}
                 <div className="config-section">

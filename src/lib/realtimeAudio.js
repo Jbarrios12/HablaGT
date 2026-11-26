@@ -15,11 +15,17 @@
 // The class is intentionally framework-agnostic so it can be used
 // from a React hook (useRealtimeAudio) or directly.
 
+import { gainFor } from "./audioPrefs";
+
 const TARGET_SAMPLE_RATE = 16000;
 
 export class RealtimeAudioClient {
-  constructor({ url, onReady, onTranscript, onError, onClose, onAudio, onSpeech, vad } = {}) {
+  // audio (opcional): configuración del agente (lib/audioPrefs.js):
+  //   { microfono, altavoz, volumen_mic, volumen_altavoz }
+  constructor({ url, onReady, onTranscript, onError, onClose, onAudio, onSpeech, vad, audio } = {}) {
     this.url = url;
+    this.audio = audio || null;
+    this.outGain = null;
     this.onReady = onReady || (() => {});
     this.onTranscript = onTranscript || (() => {});
     this.onError = onError || (() => {});
@@ -63,8 +69,13 @@ export class RealtimeAudioClient {
     }
 
     try {
+      const mic = this.audio?.microfono;
       this.mediaStream = await navigator.mediaDevices.getUserMedia({
-        audio: { channelCount: 1, sampleRate: TARGET_SAMPLE_RATE, echoCancellation: true, noiseSuppression: true },
+        audio: {
+          channelCount: 1, sampleRate: TARGET_SAMPLE_RATE, echoCancellation: true, noiseSuppression: true,
+          // "ideal": si el micrófono elegido ya no está conectado, usa el predeterminado.
+          ...(mic && mic !== "default" ? { deviceId: { ideal: mic } } : {}),
+        },
         video: false,
       });
     } catch (err) {
@@ -75,9 +86,23 @@ export class RealtimeAudioClient {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     this.audioContext = new AudioCtx({ sampleRate: TARGET_SAMPLE_RATE });
 
+    // Altavoz elegido (Chrome/Edge); si falla se queda el predeterminado.
+    const speaker = this.audio?.altavoz;
+    if (speaker && speaker !== "default" && typeof this.audioContext.setSinkId === "function") {
+      try { await this.audioContext.setSinkId(speaker); } catch { /* dispositivo no disponible */ }
+    }
+    // Volumen del altavoz para la voz de la IA.
+    this.outGain = this.audioContext.createGain();
+    this.outGain.gain.value = this.audio ? gainFor(this.audio.volumen_altavoz, 70) : 1;
+    this.outGain.connect(this.audioContext.destination);
+
     const source = this.audioContext.createMediaStreamSource(this.mediaStream);
     this.scriptNode = this.audioContext.createScriptProcessor(4096, 1, 1);
-    source.connect(this.scriptNode);
+    // Volumen del micrófono antes de enviarlo a la IA.
+    const micGain = this.audioContext.createGain();
+    micGain.gain.value = this.audio ? gainFor(this.audio.volumen_mic, 80) : 1;
+    source.connect(micGain);
+    micGain.connect(this.scriptNode);
     this.scriptNode.connect(this.audioContext.destination);
 
     this.scriptNode.onaudioprocess = (event) => {
@@ -195,7 +220,7 @@ export class RealtimeAudioClient {
     }
     const src = this.audioContext.createBufferSource();
     src.buffer = buffer;
-    src.connect(this.audioContext.destination);
+    src.connect(this.outGain || this.audioContext.destination);
     src.onended = () => {
       const idx = this._sourceNodes.indexOf(src);
       if (idx !== -1) this._sourceNodes.splice(idx, 1);

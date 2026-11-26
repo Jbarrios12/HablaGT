@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { getAudioConfig } from "../lib/audioPrefs";
 import { RealtimeAudioClient } from "../lib/realtimeAudio";
 import { softphoneService, realtimeService } from "../services";
 
@@ -36,6 +37,7 @@ export function useRealtimeAudio(callId) {
       const url = softphoneService.audioSocketURL(callId);
       const client = new RealtimeAudioClient({
         url,
+        audio: getAudioConfig(),
         onReady: () => setStatus("open"),
         onTranscript: (msg) => {
           setTranscript((prev) => [

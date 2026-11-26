@@ -1281,3 +1281,44 @@
     justify-content: center;
   }
 }
+
+/* Configuración de audio (AudioSettings.jsx) */
+.audio-unlock {
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+.audio-test-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.audio-test-row .btn-test-audio {
+  flex: 1 1 150px;
+}
+.audio-note {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+.mic-meter {
+  height: 8px;
+  margin-top: 8px;
+  border-radius: 99px;
+  background: var(--border);
+  overflow: hidden;
+}
+.mic-meter span {
+  display: block;
+  height: 100%;
+  background: var(--success);
+  border-radius: 99px;
+  transition: width 0.08s linear;
+}
+.audio-save {
+  width: 100%;
+  justify-content: center;
+  margin-top: 12px;
+}
