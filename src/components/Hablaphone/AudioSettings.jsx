@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FiHeadphones, FiSettings, FiPlay, FiMic, FiVolume2, FiSave, FiUnlock } from 'react-icons/fi';
 import { agentSelfService } from '../../services';
+import { PREFS_EVENT } from '../Layout/CallNotifier';
 import { useToast } from '../../context/ToastContext';
 import {
   AUDIO_DEFAULTS, canChooseOutput, gainFor, listAudioDevices, loadAudioConfig,
@@ -71,6 +72,7 @@ export default function AudioSettings() {
       setAudio(a);
       setPrefs(cleanPrefs);
       setSaved(JSON.stringify({ a, p: cleanPrefs }));
+      window.dispatchEvent(new CustomEvent(PREFS_EVENT, { detail: cleanPrefs }));
       toast.success('Configuración guardada');
     } catch (e) {
       toast.error(apiError(e, 'No se pudo guardar la configuración'));
@@ -236,10 +238,11 @@ export default function AudioSettings() {
           Preferencias
         </h3>
 
+        {/* Auto-respuesta y grabación automática se guardan en el backend
+            pero aún nada las aplica (Asterisk graba todas las llamadas y el
+            navegador no contesta llamadas), así que no se muestran. */}
         {[
-          ['notificaciones', 'Notificaciones de llamada', 'Mostrar notificación en llamadas entrantes'],
-          ['auto_answer', 'Auto-respuesta', 'Contestar automáticamente después de 3 segundos'],
-          ['grabacion_automatica', 'Grabación automática', 'Grabar todas las llamadas automáticamente'],
+          ['notificaciones', 'Notificaciones de llamada', 'Avisar de llamadas entrantes en cualquier pantalla'],
         ].map(([key, label, desc]) => (
           <div className="config-toggle" key={key}>
             <div className="toggle-info">
@@ -248,7 +251,13 @@ export default function AudioSettings() {
             </div>
             <label className="switch">
               <input type="checkbox" aria-label={label} checked={prefs[key]}
-                onChange={(e) => setPrefs({ ...prefs, [key]: e.target.checked })} />
+                onChange={(e) => {
+                  setPrefs({ ...prefs, [key]: e.target.checked });
+                  // Permiso para avisar también cuando la pestaña no está a la vista.
+                  if (key === 'notificaciones' && e.target.checked && typeof Notification !== 'undefined' && Notification.permission === 'default') {
+                    Notification.requestPermission().catch(() => {});
+                  }
+                }} />
               <span className="slider"></span>
             </label>
           </div>

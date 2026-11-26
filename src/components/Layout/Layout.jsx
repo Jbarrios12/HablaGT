@@ -4,6 +4,7 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import Softphone from '../Softphone';
 import ImpersonationBanner from './ImpersonationBanner';
+import CallNotifier from './CallNotifier';
 import { ModulesProvider } from '../../context/ModulesContext';
 import './Layout.css';
 
@@ -43,6 +44,7 @@ const Layout = () => {
       />
       <div className="main-wrapper">
         <ImpersonationBanner />
+        <CallNotifier />
         <Header onMenuClick={() => setMobileNavOpen((v) => !v)} />
 
         {/* Área de contenido con Softphone al lado */}

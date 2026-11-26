@@ -14,7 +14,6 @@ import {
 } from 'react-icons/fi';
 import { dashboardService } from '../../services';
 import { useLoading } from '../../context/LoadingContext';
-import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import { useRealtimeEvents } from '../../hooks/useRealtimeEvents';
 import './Dashboard.css';
@@ -51,7 +50,6 @@ const statusLabel = (s) => {
 const Dashboard = () => {
   const { user } = useAuth();
   const { showLoading, hideLoading } = useLoading();
-  const toast = useToast();
   const [summary, setSummary] = useState(null);
   const [aiStats, setAiStats] = useState(null);
   const refreshTimer = useRef(null);
@@ -85,18 +83,13 @@ const Dashboard = () => {
   }, [refresh]);
 
   // Live push: when a call event arrives, debounce a silent refresh so a
-  // burst of ARI events triggers a single reload. New inbound calls also
-  // raise a toast.
+  // burst of ARI events triggers a single reload. El aviso de llamada
+  // entrante lo muestra CallNotifier (Layout) en cualquier pantalla.
   useRealtimeEvents(useCallback((evt) => {
     if (!evt || evt.type !== 'call.update') return;
-    const p = evt.payload || {};
-    if (p.ari_type === 'StasisStart') {
-      const from = p.from || 'desconocido';
-      toast.info(`Llamada entrante de ${from}`);
-    }
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
     refreshTimer.current = setTimeout(() => refresh(), 1200);
-  }, [refresh, toast]));
+  }, [refresh]));
 
   useEffect(() => () => {
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
