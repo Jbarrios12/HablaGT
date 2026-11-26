@@ -352,3 +352,5 @@ button.kb-chip { border: 1px solid var(--border); font-size: 0.8rem; }
 .business-template-text .muted { font-size: 0.8rem; }
 .business-template-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .business-template-actions select { padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 0.85rem; }
+
+.kb-form-error { margin: 4px 0 0; color: var(--danger-text); font-size: 0.85rem; }

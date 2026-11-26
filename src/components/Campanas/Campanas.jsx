@@ -990,9 +990,35 @@ function FlowModal({ onClose, onSave }) {
 
 function KBDocumentModal({ categories, onClose, onSave }) {
   const [form, setForm] = useState({ title: '', description: '', category_id: '', source_type: 'manual', content: '' });
+  const [fileError, setFileError] = useState('');
+
+  // Archivos de texto: se leen en el navegador y se envía su contenido.
+  const onFile = async (e) => {
+    const f = e.target.files?.[0];
+    setFileError('');
+    if (!f) return;
+    if (f.size > 2 * 1024 * 1024) { setFileError('El archivo supera 2 MB.'); return; }
+    if (!/\.(txt|md|csv)$/i.test(f.name) && !(f.type || '').startsWith('text/')) {
+      setFileError('Por ahora solo archivos de texto (.txt, .md, .csv). Para PDF o Word, copia el texto y usa "Escribir texto".');
+      return;
+    }
+    const text = await f.text();
+    setForm((prev) => ({
+      ...prev,
+      content: text,
+      file_name: f.name,
+      file_type: f.type || 'text/plain',
+      file_size: f.size,
+      title: prev.title || f.name.replace(/\.[^.]+$/, ''),
+    }));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!form.content.trim()) {
+      setFileError(form.source_type === 'upload' ? 'Elige un archivo con texto.' : 'Escribe el contenido del documento.');
+      return;
+    }
     onSave({
       ...form,
       category_id: form.category_id || undefined,
@@ -1017,15 +1043,22 @@ function KBDocumentModal({ categories, onClose, onSave }) {
               </select>
             </label>
             <label>Tipo
-              <select value={form.source_type} onChange={e => setForm({ ...form, source_type: e.target.value })}>
-                <option value="manual">Manual</option>
-                <option value="upload">Archivo</option>
-                <option value="url">URL</option>
+              <select value={form.source_type} onChange={e => { setFileError(''); setForm({ ...form, source_type: e.target.value, content: '' }); }}>
+                <option value="manual">Escribir texto</option>
+                <option value="upload">Archivo de texto</option>
               </select>
             </label>
             {form.source_type === 'manual' && (
-              <label>Contenido<textarea value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} rows={10} /></label>
+              <label>Contenido *<textarea value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} rows={10}
+                placeholder="Ej.: Horario de atención, precios, preguntas frecuentes… La Operadora IA usará este texto para responder." /></label>
             )}
+            {form.source_type === 'upload' && (
+              <label>Archivo (.txt, .md, .csv)
+                <input type="file" accept=".txt,.md,.csv,text/plain,text/markdown,text/csv" onChange={onFile} />
+                {form.file_name && !fileError && <span className="help-text">{form.file_name} · {form.content.length.toLocaleString('es-GT')} caracteres</span>}
+              </label>
+            )}
+            {fileError && <p className="kb-form-error" role="alert">{fileError}</p>}
           </div>
           <div className="modal-footer">
             <button type="submit" className="btn btn-primary">Crear</button>
