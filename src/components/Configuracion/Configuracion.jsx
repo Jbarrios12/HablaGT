@@ -677,7 +677,7 @@ const Configuracion = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label>URL pública de grabaciones</label>
+                  <label>URL de grabaciones</label>
                   <input
                     type="url"
                     placeholder="https://pbx.example.com/recordings"
@@ -685,7 +685,7 @@ const Configuracion = () => {
                     onChange={(e) => setIntegrationForm({ ...integrationForm, freepbx_recordings_url: e.target.value })}
                     disabled={!integrationForm.freepbx_enabled}
                   />
-                  <small>Para que el front pueda reproducir las grabaciones en Reportería.</small>
+                  <small>Carpeta donde el servidor publica los archivos <code>&lt;canal&gt;.wav</code> de Asterisk. El backend los trae desde ahí para reproducirlos en Reportería y Hablaphone, así que puede ser una dirección interna.</small>
                 </div>
                 <div className="form-group">
                   <label>Extensión para llamadas de IA</label>

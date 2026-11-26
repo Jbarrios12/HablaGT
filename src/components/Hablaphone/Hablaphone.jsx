@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { cdrService, agentSelfService } from '../../services';
+import { checkRecording, recordingSrc } from '../../lib/recordings';
 import { useLoading } from '../../context/LoadingContext';
 import { useToast } from '../../context/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -107,12 +108,16 @@ const Hablaphone = () => {
         setHistorial(
           items.map((c) => ({
             id: c.id,
-            numero: c.origen || c.destino || '',
-            contacto: c.contacto_nombre || c.agente_nombre || c.origen || c.destino,
+            // En las salientes el origen es la extensión del agente: el número
+            // del cliente es el destino.
+            numero: (c.tipo === 'outbound' ? c.destino || c.origen : c.origen || c.destino) || '',
+            contacto: c.contacto_nombre || (c.tipo === 'outbound' ? c.destino : c.origen) || c.agente_nombre || '',
             tipo: c.tipo,
             duracion: c.duracion_seg || 0,
             fecha: c.occurred_at,
             estado: c.estado,
+            grabacion: Boolean(c.grabacion && c.grabacion_url),
+            grabacion_url: c.grabacion_url || '',
           }))
         );
         setSipInfo({
@@ -238,6 +243,30 @@ const Hablaphone = () => {
 
   const handleColgar = () => softphone('hangup');
 
+  // Grabaciones del historial: un solo reproductor para la página.
+  const audioRef = useRef(null);
+  const [sonando, setSonando] = useState(null);
+  const toggleGrabacion = async (llamada) => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (sonando === llamada.id) {
+      audio.pause();
+      setSonando(null);
+      return;
+    }
+    try {
+      await checkRecording(llamada.grabacion_url);
+    } catch (err) {
+      toast.error(err.message);
+      return;
+    }
+    audio.src = recordingSrc(llamada.grabacion_url);
+    audio.play().then(() => setSonando(llamada.id)).catch(() => {
+      setSonando(null);
+      toast.error('No se pudo reproducir la grabación.');
+    });
+  };
+
   // Filtrar historial
   const historialFiltrado = historial.filter(llamada => {
     const matchTipo = filtroHistorial === 'todos' || llamada.tipo === filtroHistorial;
@@ -258,6 +287,7 @@ const Hablaphone = () => {
 
   return (
     <div className="hablaphone">
+      <audio ref={audioRef} onEnded={() => setSonando(null)} hidden />
       {/* Header */}
       <div className="hablaphone-header">
         <div className="hablaphone-title">
@@ -547,8 +577,13 @@ const Hablaphone = () => {
                           <FiPhone />
                         </button>
                         {llamada.grabacion && (
-                          <button className="btn-accion grabar" title="Escuchar grabación">
-                            <FiPlay />
+                          <button
+                            className={`btn-accion grabar ${sonando === llamada.id ? 'active' : ''}`}
+                            title={sonando === llamada.id ? 'Pausar grabación' : 'Escuchar grabación'}
+                            aria-label={sonando === llamada.id ? 'Pausar grabación' : 'Escuchar grabación'}
+                            onClick={() => toggleGrabacion(llamada)}
+                          >
+                            {sonando === llamada.id ? <FiPause /> : <FiPlay />}
                           </button>
                         )}
                       </span>

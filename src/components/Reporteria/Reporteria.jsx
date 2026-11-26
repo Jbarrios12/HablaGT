@@ -20,6 +20,7 @@ import {
   FiPieChart
 } from 'react-icons/fi';
 import { cdrService } from '../../services';
+import { checkRecording, recordingSrc } from '../../lib/recordings';
 import { useLoading } from '../../context/LoadingContext';
 import { useToast } from '../../context/ToastContext';
 import { useRealtimeEvents } from '../../hooks/useRealtimeEvents';
@@ -53,6 +54,8 @@ const hourlyData = [
   { hora: '17:00', llamadas: 22 },
 ];
 
+const fmtSeg = (s) => `${Math.floor((s || 0) / 60)}:${String(Math.floor((s || 0) % 60)).padStart(2, '0')}`;
+
 const Reporteria = () => {
   const { showLoading, hideLoading } = useLoading();
   const toast = useToast();
@@ -72,6 +75,7 @@ const Reporteria = () => {
   const [audioActivo, setAudioActivo] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
+  const [audioTimes, setAudioTimes] = useState({ cur: 0, dur: 0 });
   const audioRef = useRef(null);
 
   const realtimeTimer = useRef(null);
@@ -145,7 +149,7 @@ const Reporteria = () => {
     return true;
   });
 
-  const handlePlayRecording = (item) => {
+  const handlePlayRecording = async (item) => {
     if (!item.grabacion_url) {
       toast.warning('No hay URL de grabación para esta llamada');
       return;
@@ -159,17 +163,31 @@ const Reporteria = () => {
         setIsPlaying(true);
       }
     } else {
-      setAudioActivo(item);
+      try {
+        await checkRecording(item.grabacion_url);
+      } catch (err) {
+        toast.error(err.message);
+        return;
+      }
+      // El reproductor se monta al cambiar audioActivo; el efecto de abajo
+      // le asigna la URL y lo inicia cuando ya existe.
+      setAudioTimes({ cur: 0, dur: 0 });
       setIsPlaying(false);
       setAudioProgress(0);
-      setTimeout(() => {
-        if (audioRef.current) {
-          audioRef.current.src = item.grabacion_url;
-          audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
-        }
-      }, 0);
+      setAudioActivo(item);
     }
   };
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audioActivo || !audio) return;
+    audio.src = recordingSrc(audioActivo.grabacion_url);
+    audio.play().catch(() => {
+      setIsPlaying(false);
+      toast.error('No se pudo reproducir la grabación.');
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audioActivo?.id]);
 
   const closeAudioPlayer = () => {
     if (audioRef.current) {
@@ -566,7 +584,7 @@ const Reporteria = () => {
                 </div>
 
                 <span className="audio-time">
-                  {Math.floor(audioProgress * 0.05)}:{String(Math.floor((audioProgress * 0.05 % 1) * 60)).padStart(2, '0')}
+                  {fmtSeg(audioTimes.cur)} / {fmtSeg(audioTimes.dur)}
                 </span>
 
                 <button className="audio-btn close" onClick={closeAudioPlayer}>
@@ -579,6 +597,7 @@ const Reporteria = () => {
               onTimeUpdate={(e) => {
                 const a = e.currentTarget;
                 if (a.duration) setAudioProgress((a.currentTime / a.duration) * 100);
+                setAudioTimes({ cur: a.currentTime, dur: Number.isFinite(a.duration) ? a.duration : 0 });
               }}
               onEnded={() => { setIsPlaying(false); setAudioProgress(0); }}
               onPause={() => setIsPlaying(false)}
