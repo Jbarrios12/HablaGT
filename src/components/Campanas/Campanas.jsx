@@ -538,7 +538,7 @@ function CampaignDetail({ campaign, onCampaignSaved, agentsIA, flows, kbDocs, kb
                         <td>{cl.nombre}</td>
                         <td>{cl.file_name || '-'}</td>
                         <td>{cl.row_count || 0}</td>
-                        <td><span className={`status-badge ${cl.status}`}>{cl.status}</span></td>
+                        <td><span className={`status-badge ${cl.status}`} title={cl.error_log || undefined}>{({ ready: 'Lista', pending: 'Sin contactos', importing: 'Importando', failed: 'Error' })[cl.status] || cl.status}</span></td>
                         <td>{cl.columns?.join(', ') || '-'}</td>
                       </tr>
                     ))}
