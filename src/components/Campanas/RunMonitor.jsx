@@ -89,7 +89,7 @@ export default function RunMonitor({ crews }) {
     } finally {
       setLoading(false);
     }
-  }, [filters, page]);
+  }, [filters, page, toast]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {

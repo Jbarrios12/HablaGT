@@ -17,7 +17,7 @@ const ReminderSettings = () => {
     reminderService.get()
       .then((res) => { setScript(res.script); setDefaults(res.defaults || {}); })
       .catch(() => toast.error('No se pudo cargar el guion de recordatorios'));
-  }, []);
+  }, [toast]);
 
   if (!script) return null;
   const set = (patch) => setScript((s) => ({ ...s, ...patch }));

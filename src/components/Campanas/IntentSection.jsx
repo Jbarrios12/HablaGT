@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiPlus, FiEdit2, FiTrash2, FiX, FiTarget, FiPlay, FiLock, FiDownload } from 'react-icons/fi';
 import { intentService, agentIAService, moduleService } from '../../services';
@@ -31,7 +31,7 @@ export default function IntentSection({ crews, tools, builtinTools }) {
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const res = await intentService.list();
       setIntents(res?.items || []);
@@ -40,8 +40,8 @@ export default function IntentSection({ crews, tools, builtinTools }) {
     } finally {
       setLoading(false);
     }
-  };
-  useEffect(() => { load(); }, []);
+  }, [toast]);
+  useEffect(() => { load(); }, [load]);
 
   const save = async (form) => {
     try {
