@@ -13,6 +13,23 @@ import Loading from '../Loading';
 import './Login.css';
 
 // "Recordarme" guarda solo el nombre de usuario (nunca la contraseña).
+// Código del enlace de recuperación (?reset=...). Se quita de la barra de
+// direcciones al leerlo para que no quede en el historial.
+const readResetLinkToken = () => {
+  try {
+    const url = new URL(window.location.href);
+    const token = url.searchParams.get('reset') || '';
+    if (token) {
+      url.searchParams.delete('reset');
+      url.searchParams.delete('tenant');
+      window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+    }
+    return token;
+  } catch {
+    return '';
+  }
+};
+
 const REMEMBER_KEY = 'hablagt.rememberUser';
 const readRemembered = () => {
   try { return localStorage.getItem(REMEMBER_KEY) || ''; } catch { return ''; }
@@ -165,12 +182,14 @@ const Login = () => {
   const [twoFACode, setTwoFACode] = useState('');
 
   // Recuperación de contraseña: 'login' (por defecto) | 'forgot' | 'reset'.
-  const [view, setView] = useState('login');
+  // El enlace del correo de recuperación trae el código: /login?reset=...
+  const [linkToken] = useState(readResetLinkToken);
+  const [view, setView] = useState(linkToken ? 'reset' : 'login');
   const [forgotEmail, setForgotEmail] = useState('');
-  const [resetToken, setResetToken] = useState('');
+  const [resetToken, setResetToken] = useState(linkToken);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [info, setInfo] = useState('');
+  const [info, setInfo] = useState(linkToken ? 'Elige tu nueva contraseña.' : '');
 
   const goToLogin = () => {
     setView('login');
