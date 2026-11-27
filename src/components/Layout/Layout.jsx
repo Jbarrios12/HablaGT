@@ -1,18 +1,51 @@
-import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import Softphone from '../Softphone';
+import ImpersonationBanner from './ImpersonationBanner';
+import CallNotifier from './CallNotifier';
+import { ModulesProvider } from '../../context/ModulesContext';
 import './Layout.css';
 
-const Layout = ({ title = 'Dashboard' }) => {
+const PAGE_TITLES = {
+  '/dashboard': 'Dashboard',
+  '/hablaphone': 'Hablaphone',
+  '/reportes': 'Reportería',
+  '/agendas': 'Agendas',
+  '/contactos': 'Contactos',
+  '/ia-operadora': 'Operadora IA',
+  '/campanas': 'Campañas',
+  '/formularios': 'Formularios',
+  '/configuracion': 'Configuración',
+};
+
+const Layout = () => {
   const [isSoftphoneOpen, setIsSoftphoneOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const location = useLocation();
+  const title = PAGE_TITLES[location.pathname] || 'Dashboard';
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    document.title = `${title} · HablaGT`;
+  }, [title]);
 
   return (
+    <ModulesProvider>
     <div className="layout">
-      <Sidebar />
+      <Sidebar mobileOpen={mobileNavOpen} onNavigate={() => setMobileNavOpen(false)} />
+      <div
+        className={`sidebar-backdrop ${mobileNavOpen ? 'open' : ''}`}
+        onClick={() => setMobileNavOpen(false)}
+      />
       <div className="main-wrapper">
-        <Header title={title} />
+        <ImpersonationBanner />
+        <CallNotifier />
+        <Header onMenuClick={() => setMobileNavOpen((v) => !v)} />
 
         {/* Área de contenido con Softphone al lado */}
         <div className={`content-area ${isSoftphoneOpen ? 'softphone-open' : ''}`}>
@@ -28,6 +61,7 @@ const Layout = ({ title = 'Dashboard' }) => {
         </div>
       </div>
     </div>
+    </ModulesProvider>
   );
 };
 

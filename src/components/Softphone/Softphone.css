@@ -16,46 +16,46 @@
   right: 20px;
   width: 52px;
   height: 52px;
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-dark));
   border: none;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   color: white;
   font-size: 20px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 4px 20px rgb(var(--color-accent-rgb) / 0.4);
   z-index: 1001;
   transition: all 0.3s ease;
 }
 
 .phone-trigger:hover {
   transform: scale(1.05);
-  box-shadow: 0 6px 25px rgba(16, 185, 129, 0.5);
+  box-shadow: 0 6px 25px rgb(var(--color-accent-rgb) / 0.5);
 }
 
 .phone-trigger.active {
-  background: linear-gradient(135deg, #64748b, #475569);
-  box-shadow: 0 4px 20px rgba(100, 116, 139, 0.4);
+  background: linear-gradient(135deg, var(--color-gray-500), var(--color-gray-600));
+  box-shadow: 0 4px 20px rgb(100 116 139 / 0.4);
 }
 
 .phone-trigger.in-call {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-dark));
   animation: callPulse 2s ease-in-out infinite;
 }
 
 .phone-trigger.in-call.active {
   animation: none;
-  background: linear-gradient(135deg, #64748b, #475569);
+  background: linear-gradient(135deg, var(--color-gray-500), var(--color-gray-600));
 }
 
 @keyframes callPulse {
   0%, 100% {
-    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+    box-shadow: 0 4px 20px rgb(var(--color-accent-rgb) / 0.4);
   }
   50% {
-    box-shadow: 0 4px 30px rgba(16, 185, 129, 0.7), 0 0 0 8px rgba(16, 185, 129, 0.2);
+    box-shadow: 0 4px 30px rgb(var(--color-accent-rgb) / 0.7), 0 0 0 8px rgb(var(--color-accent-rgb) / 0.2);
   }
 }
 
@@ -68,12 +68,12 @@
   height: 14px;
 }
 
-.call-indicator .pulse {
+.phone-trigger .call-indicator .pulse {
   position: absolute;
   width: 100%;
   height: 100%;
-  background: #10b981;
-  border-radius: 50%;
+  background: var(--color-accent);
+  border-radius: var(--radius-full);
   animation: pulseRing 1.5s ease-out infinite;
 }
 
@@ -82,8 +82,8 @@
   position: absolute;
   width: 100%;
   height: 100%;
-  background: #10b981;
-  border-radius: 50%;
+  background: var(--color-accent);
+  border-radius: var(--radius-full);
   border: 2px solid white;
 }
 
@@ -101,8 +101,11 @@
 /* Panel principal - responsive */
 .softphone-panel {
   height: 100%;
-  background: white;
-  border-left: 1px solid #e2e8f0;
+  background: var(--surface);
+  border-left: 1px solid var(--color-gray-200);
+  border-top-left-radius: var(--radius-xl);
+  border-bottom-left-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -120,7 +123,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px var(--sp-padding);
-  background: linear-gradient(135deg, #0f172a, #1e293b);
+  background: linear-gradient(135deg, var(--surface-inverse), var(--surface-inverse-2));
   color: white;
   flex-shrink: 0;
   gap: 10px;
@@ -136,8 +139,8 @@
 .sp-logo {
   width: 36px;
   height: 36px;
-  background: linear-gradient(135deg, #10b981, #059669);
-  border-radius: 10px;
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-dark));
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -163,18 +166,18 @@
   align-items: center;
   gap: 5px;
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgb(var(--color-white-rgb) / 0.7);
 }
 
 .sp-status.online {
-  color: #10b981;
+  color: var(--color-accent);
 }
 
-.status-dot {
+.softphone-panel .status-dot {
   width: 6px;
   height: 6px;
-  background: #10b981;
-  border-radius: 50%;
+  background: var(--color-accent);
+  border-radius: var(--radius-full);
   animation: statusPulse 2s ease-in-out infinite;
   flex-shrink: 0;
 }
@@ -187,9 +190,9 @@
 .sp-close {
   width: 30px;
   height: 30px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(var(--color-white-rgb) / 0.1);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   color: white;
   font-size: 16px;
   cursor: pointer;
@@ -201,7 +204,7 @@
 }
 
 .sp-close:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(var(--color-white-rgb) / 0.2);
 }
 
 /* Cuerpo del panel */
@@ -228,8 +231,8 @@
   position: relative;
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #0ea5e9, #6366f1);
-  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -245,8 +248,8 @@
 .avatar-rings span {
   position: absolute;
   inset: 0;
-  border: 2px solid rgba(14, 165, 233, 0.4);
-  border-radius: 50%;
+  border: 2px solid rgb(var(--color-primary-rgb) / 0.4);
+  border-radius: var(--radius-full);
   animation: avatarRing 1.5s ease-out infinite;
 }
 
@@ -273,15 +276,15 @@
   }
 }
 
-.call-info {
+.softphone-panel .call-info {
   text-align: center;
 }
 
-.call-number {
+.softphone-panel .call-number {
   display: block;
   font-size: 1.2rem;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--color-dark);
   letter-spacing: 0.5px;
 }
 
@@ -289,7 +292,7 @@
   display: block;
   margin-top: 6px;
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--color-gray-500);
 }
 
 .call-timer {
@@ -297,7 +300,7 @@
   align-items: center;
   justify-content: center;
   gap: 5px;
-  color: #10b981;
+  color: var(--color-accent);
   font-weight: 600;
   font-size: 1rem;
 }
@@ -316,9 +319,9 @@
   align-items: center;
   gap: 4px;
   padding: 12px 14px;
-  background: #f1f5f9;
+  background: var(--color-gray-100);
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s;
   min-width: 60px;
@@ -326,21 +329,21 @@
 
 .action-btn svg {
   font-size: 18px;
-  color: #0f172a;
+  color: var(--color-dark);
 }
 
 .action-btn span {
   font-size: 0.65rem;
-  color: #64748b;
+  color: var(--color-gray-500);
   font-weight: 500;
 }
 
 .action-btn:hover {
-  background: #e2e8f0;
+  background: var(--color-gray-200);
 }
 
 .action-btn.active {
-  background: #0ea5e9;
+  background: var(--color-primary);
 }
 
 .action-btn.active svg,
@@ -358,20 +361,20 @@
   max-width: 180px;
   padding: 14px 24px;
   margin-top: 16px;
-  background: linear-gradient(135deg, #ef4444, #dc2626);
+  background: linear-gradient(135deg, var(--color-danger), var(--danger-strong));
   border: none;
-  border-radius: 50px;
+  border-radius: var(--radius-full);
   color: white;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+  box-shadow: 0 6px 20px rgb(var(--color-danger-rgb) / 0.4);
   transition: all 0.2s;
 }
 
 .end-call-btn:hover {
   transform: scale(1.02);
-  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.5);
+  box-shadow: 0 8px 25px rgb(var(--color-danger-rgb) / 0.5);
 }
 
 .end-call-btn svg {
@@ -390,10 +393,10 @@
   padding: 14px 44px 14px 16px;
   font-size: 1.1rem;
   font-weight: 600;
-  color: #0f172a;
-  background: #f8fafc;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
+  color: var(--color-dark);
+  background: var(--color-gray-50);
+  border: 2px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
   text-align: center;
   outline: none;
   letter-spacing: 1px;
@@ -401,13 +404,13 @@
 }
 
 .sp-display input:focus {
-  border-color: #0ea5e9;
-  background: white;
+  border-color: var(--color-primary);
+  background: var(--surface);
 }
 
 .sp-display input::placeholder {
   font-weight: 400;
-  color: #94a3b8;
+  color: var(--color-gray-400);
   font-size: 0.9rem;
   letter-spacing: normal;
 }
@@ -417,7 +420,7 @@
   right: 12px;
   background: none;
   border: none;
-  color: #94a3b8;
+  color: var(--color-gray-400);
   font-size: 20px;
   cursor: pointer;
   padding: 4px;
@@ -426,7 +429,7 @@
 }
 
 .display-delete:hover {
-  color: #ef4444;
+  color: var(--color-danger);
 }
 
 /* Tabs */
@@ -438,23 +441,23 @@
 .sp-tab {
   flex: 1;
   padding: 10px;
-  background: #f1f5f9;
+  background: var(--color-gray-100);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.8rem;
   font-weight: 500;
-  color: #64748b;
+  color: var(--color-gray-500);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .sp-tab:hover {
-  background: #e2e8f0;
+  background: var(--color-gray-200);
 }
 
 .sp-tab.active {
-  background: #0f172a;
-  color: white;
+  background: var(--brand);
+  color: var(--text-on-brand);
 }
 
 /* Keypad - Responsive Grid con tamaño máximo */
@@ -471,9 +474,9 @@
   width: 100%;
   height: 56px;
   max-height: 60px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  background: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -484,25 +487,25 @@
 }
 
 .keypad-btn:hover {
-  background: #f1f5f9;
+  background: var(--color-gray-100);
   transform: scale(1.02);
 }
 
 .keypad-btn:active {
-  background: #e2e8f0;
+  background: var(--color-gray-200);
   transform: scale(0.98);
 }
 
 .btn-number {
   font-size: 1.3rem;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--color-dark);
   line-height: 1;
 }
 
 .btn-letters {
   font-size: 0.5rem;
-  color: #94a3b8;
+  color: var(--color-gray-400);
   letter-spacing: 1px;
   margin-top: 2px;
 }
@@ -521,20 +524,20 @@
   align-items: center;
   gap: 10px;
   padding: 10px;
-  background: #f8fafc;
-  border-radius: 10px;
+  background: var(--color-gray-50);
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .recent-item:hover {
-  background: #f1f5f9;
+  background: var(--color-gray-100);
 }
 
 .recent-icon {
   width: 34px;
   height: 34px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -542,19 +545,19 @@
   flex-shrink: 0;
 }
 
-.recent-icon.incoming {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10b981;
+.softphone-panel .recent-icon.incoming {
+  background: rgb(var(--color-accent-rgb) / 0.1);
+  color: var(--color-accent);
 }
 
-.recent-icon.outgoing {
-  background: rgba(14, 165, 233, 0.1);
-  color: #0ea5e9;
+.softphone-panel .recent-icon.outgoing {
+  background: rgb(var(--color-primary-rgb) / 0.1);
+  color: var(--color-primary);
 }
 
-.recent-icon.missed {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+.softphone-panel .recent-icon.missed {
+  background: rgb(var(--color-danger-rgb) / 0.1);
+  color: var(--color-danger);
 }
 
 .recent-info {
@@ -567,7 +570,7 @@
 
 .recent-name {
   font-weight: 600;
-  color: #0f172a;
+  color: var(--color-dark);
   font-size: 0.8rem;
   white-space: nowrap;
   overflow: hidden;
@@ -576,7 +579,7 @@
 
 .recent-number {
   font-size: 0.7rem;
-  color: #64748b;
+  color: var(--color-gray-500);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -584,7 +587,7 @@
 
 .recent-time {
   font-size: 0.65rem;
-  color: #94a3b8;
+  color: var(--color-gray-400);
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -593,10 +596,10 @@
 .sp-call-btn {
   width: 56px;
   height: 56px;
-  background: #e2e8f0;
+  background: var(--color-gray-200);
   border: none;
-  border-radius: 50%;
-  color: #94a3b8;
+  border-radius: var(--radius-full);
+  color: var(--color-gray-400);
   font-size: 22px;
   cursor: not-allowed;
   display: flex;
@@ -608,15 +611,134 @@
 }
 
 .sp-call-btn.active {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-dark));
   color: white;
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 6px 20px rgb(var(--color-accent-rgb) / 0.4);
 }
 
 .sp-call-btn.active:hover {
   transform: scale(1.05);
-  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
+  box-shadow: 0 8px 25px rgb(var(--color-accent-rgb) / 0.5);
+}
+
+/* ========================================
+   Wrap-up de la llamada
+======================================== */
+.sp-wrapup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sp-wrapup h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-dark);
+}
+
+.sp-wrapup-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-gray-500);
+}
+
+.sp-wrapup-select,
+.sp-wrapup-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  color: var(--color-dark);
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.sp-wrapup-select:focus,
+.sp-wrapup-textarea:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgb(var(--color-accent-rgb) / 0.15);
+}
+
+.sp-wrapup-textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.4;
+}
+
+.sp-wrapup-form {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--brand-text);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.sp-wrapup-form:hover {
+  background: var(--brand-soft);
+  border-color: var(--brand);
+}
+
+.sp-wrapup-done {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--success-text);
+}
+
+.sp-wrapup-save {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-dark));
+  border: none;
+  border-radius: var(--radius-md);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 14px rgb(var(--color-accent-rgb) / 0.35);
+}
+
+.sp-wrapup-save:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgb(var(--color-accent-rgb) / 0.45);
+}
+
+.sp-wrapup-skip {
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--color-gray-500);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sp-wrapup-skip:hover {
+  background: var(--color-gray-100);
+  color: var(--color-dark);
 }
 
 /* ========================================
@@ -676,7 +798,7 @@
     width: 30px;
     height: 30px;
     font-size: 13px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
   }
 
   .sp-header-info h3 {
@@ -764,7 +886,7 @@
     inset: -12px;
   }
 
-  .call-number {
+  .softphone-panel .call-number {
     font-size: 1.1rem;
   }
 
@@ -859,8 +981,12 @@
     top: 60px;
     right: 0;
     bottom: 0;
+    /* top/bottom definen el alto; height: 100% (de la regla base) lo hacía
+       medir toda la pantalla y el final del panel quedaba fuera. */
+    height: auto;
     z-index: 1000;
-    box-shadow: -5px 0 30px rgba(0, 0, 0, 0.15);
+    border-radius: 0;
+    box-shadow: -5px 0 30px rgb(var(--color-dark-rgb) / 0.15);
   }
 
   :root {
@@ -910,5 +1036,73 @@
     width: 48px;
     height: 48px;
     font-size: 18px;
+  }
+}
+
+/* Agent status: only "Disponible" receives the campaign queue calls. */
+.sp-presence {
+  display: flex;
+  gap: 6px;
+  padding: 8px var(--sp-padding);
+  background: var(--color-gray-50, var(--surface-2));
+  border-bottom: 1px solid var(--color-gray-200, var(--border));
+  flex-shrink: 0;
+}
+
+.sp-presence-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 4px;
+  border: 1px solid var(--color-gray-200, var(--border));
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--color-gray-600, var(--text-secondary));
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.sp-presence-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+.sp-presence-btn.online { color: var(--success-text); }
+.softphone-panel .sp-presence-btn.busy { color: var(--warning-text); }
+.sp-presence-btn.offline { color: var(--danger-text); }
+
+.sp-presence-btn.active.online { background: var(--success-soft); border-color: var(--success); }
+.softphone-panel .sp-presence-btn.active.busy { background: var(--warning-soft); border-color: var(--warning); }
+.sp-presence-btn.active.offline { background: var(--danger-soft); border-color: var(--danger); }
+.sp-presence-btn.active .sp-presence-dot { opacity: 1; }
+
+/* Operadora IA: error al activar la IA en la llamada */
+.sp-ai-error {
+  width: 100%;
+  margin-top: 12px;
+  font-size: 0.75rem;
+  color: var(--color-danger);
+  background: rgb(var(--color-danger-rgb) / 0.08);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+}
+
+/* Celular: el panel ocupa todo el ancho (antes dejaba una franja de la
+   página a la izquierda). El ancho animado viene en línea desde React. */
+@media (max-width: 480px) {
+  .softphone-panel {
+    left: 0;
+    width: 100% !important;
+  }
+
+  .sp-inner {
+    max-width: none;
   }
 }

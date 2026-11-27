@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import {
   FiUsers,
   FiPlus,
@@ -21,8 +22,18 @@ import {
   FiPhoneCall,
   FiPhoneIncoming,
   FiPhoneOutgoing,
-  FiSettings
+  FiSettings,
+  FiGrid,
+  FiList,
+  FiChevronLeft,
+  FiChevronRight
 } from 'react-icons/fi';
+import { contactService, contactTagService } from '../../services';
+import { useLoading } from '../../context/LoadingContext';
+import { useToast } from '../../context/ToastContext';
+import ContactForms from './ContactForms';
+import ContactCallHistory from './ContactCallHistory';
+import { downloadContactsCsv, downloadTemplateCsv, parseContactsCsv } from './contactCsv';
 import './Contactos.css';
 
 // Datos de ejemplo - Contactos
@@ -113,14 +124,6 @@ const contactosData = [
   },
 ];
 
-// Historial de llamadas de ejemplo
-const historialLlamadas = [
-  { id: 1, contactoId: 1, tipo: 'entrante', fecha: '2024-01-15 09:23', duracion: '05:32', agente: 'Juan Pérez' },
-  { id: 2, contactoId: 1, tipo: 'saliente', fecha: '2024-01-14 11:15', duracion: '03:45', agente: 'María García' },
-  { id: 3, contactoId: 1, tipo: 'entrante', fecha: '2024-01-12 14:30', duracion: '08:20', agente: 'Juan Pérez' },
-  { id: 4, contactoId: 2, tipo: 'saliente', fecha: '2024-01-14 14:30', duracion: '02:15', agente: 'Carlos López' },
-  { id: 5, contactoId: 3, tipo: 'entrante', fecha: '2024-01-12 11:15', duracion: '06:40', agente: 'Ana Martínez' },
-];
 
 const etiquetasDefault = {
   cliente: { label: 'Cliente', color: '#0ea5e9' },
@@ -135,16 +138,137 @@ const coloresDisponibles = [
   '#06b6d4', '#3b82f6', '#a855f7', '#f97316'
 ];
 
+const mapContacto = (c) => ({
+  id: c.id,
+  nombre: c.nombre,
+  empresa: c.empresa || '',
+  telefonoPrincipal: c.telefono_principal || c.telefonoPrincipal || '',
+  telefonoMovil: c.telefono_movil || c.telefonoMovil || '',
+  telefonoTrabajo: c.telefono_trabajo || c.telefonoTrabajo || '',
+  email: c.email || '',
+  direccion: c.direccion || '',
+  notas: c.notas || '',
+  etiquetas: c.etiquetas || [],
+  fechaCreacion: c.created_at ? c.created_at.split('T')[0] : '',
+  ultimoContacto: c.ultimo_contacto || null,
+});
+
 const Contactos = () => {
-  const [contactos, setContactos] = useState(contactosData);
-  const [busqueda, setBusqueda] = useState('');
+  const { showLoading, hideLoading } = useLoading();
+  const toast = useToast();
+  const [contactos, setContactos] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+  // ?q= viene del buscador del header.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [busqueda, setBusqueda] = useState(() => searchParams.get('q') || '');
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q !== null) {
+      setBusqueda(q);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
   const [filtroEtiqueta, setFiltroEtiqueta] = useState('todos');
   const [modalContacto, setModalContacto] = useState({ open: false, modo: 'crear', data: null });
   const [contactoDetalle, setContactoDetalle] = useState(null);
+  const [vista, setVista] = useState('cards');
+  const [paginaActual, setPaginaActual] = useState(1);
+  const CONTACTOS_POR_PAGINA = 12;
 
   // Estado para categorías/etiquetas
-  const [etiquetasConfig, setEtiquetasConfig] = useState(etiquetasDefault);
+  const [etiquetasConfig, setEtiquetasConfig] = useState({});
   const [modalCategorias, setModalCategorias] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      showLoading('Cargando contactos...');
+      try {
+        const [items, tags] = await Promise.all([
+          contactService.listAll(),
+          contactTagService.list(),
+        ]);
+        const tagMap = {};
+        (tags?.items || tags || []).forEach((t) => {
+          tagMap[t.key || t.Key] = {
+            label: t.label || t.Label,
+            color: t.color || t.Color || '#0ea5e9',
+          };
+        });
+        setContactos(items.map(mapContacto));
+        setEtiquetasConfig(Object.keys(tagMap).length ? tagMap : etiquetasDefault);
+      } catch (err) {
+        console.error('Error cargando contactos', err);
+        toast.error('No se pudieron cargar los contactos');
+      } finally {
+        setLoaded(true);
+        hideLoading();
+      }
+    };
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ---- Importar / exportar CSV ----
+  const importRef = useRef(null);
+  const tagLabel = (key) => etiquetasConfig[key]?.label || key;
+  const tagKeyFor = (label) => {
+    const l = label.trim().toLowerCase();
+    const hit = Object.entries(etiquetasConfig).find(([k, v]) => k.toLowerCase() === l || (v.label || '').toLowerCase() === l);
+    return hit ? hit[0] : null;
+  };
+  const phoneKey = (p) => String(p || '').replace(/\D/g, '').slice(-8);
+
+  const handleExport = () => {
+    if (!contactosFiltrados.length) return toast.info('No hay contactos para exportar');
+    downloadContactsCsv(contactosFiltrados, tagLabel);
+    toast.success(`${contactosFiltrados.length} contactos exportados`);
+  };
+
+  const handleImportFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const { contacts, errors } = parseContactsCsv(await file.text(), tagKeyFor);
+    if (!contacts.length) {
+      toast.error(errors[0] ? `No se pudo importar: ${errors[0].motivo}` : 'El archivo no tiene contactos');
+      return;
+    }
+    // Evita duplicar: omite teléfonos que ya existen (o repetidos en el archivo).
+    const seen = new Set(contactos.map((c) => phoneKey(c.telefonoPrincipal)).filter(Boolean));
+    const nuevos = [];
+    let repetidos = 0;
+    for (const c of contacts) {
+      const k = phoneKey(c.data.telefono_principal);
+      if (k && seen.has(k)) { repetidos++; continue; }
+      if (k) seen.add(k);
+      nuevos.push(c);
+    }
+    const resumen = [`${nuevos.length} contactos nuevos`];
+    if (repetidos) resumen.push(`${repetidos} ya existen (se omiten)`);
+    if (errors.length) resumen.push(`${errors.length} filas con errores (se omiten)`);
+    if (!nuevos.length) return toast.info(resumen.join(' · '));
+    if (!window.confirm(`Importar desde "${file.name}":\n\n${resumen.join('\n')}\n\n¿Continuar?`)) return;
+
+    let ok = 0;
+    const fallidos = [...errors];
+    for (let i = 0; i < nuevos.length; i++) {
+      showLoading(`Importando ${i + 1} de ${nuevos.length}…`);
+      try {
+        await contactService.create(nuevos[i].data);
+        ok++;
+      } catch (err) {
+        fallidos.push({ fila: nuevos[i].fila, motivo: err?.response?.data?.error?.message || err.message });
+      }
+    }
+    try {
+      setContactos((await contactService.listAll()).map(mapContacto));
+    } finally {
+      hideLoading();
+    }
+    const detalle = fallidos.slice(0, 3).map((f) => `fila ${f.fila}: ${f.motivo}`).join('; ');
+    if (fallidos.length) toast.warning(`${ok} importados, ${fallidos.length} omitidos${repetidos ? `, ${repetidos} ya existían` : ''}. ${detalle}${fallidos.length > 3 ? '…' : ''}`, 9000);
+    else toast.success(`${ok} contactos importados${repetidos ? ` (${repetidos} ya existían)` : ''}`);
+  };
 
   // Filtrar contactos
   const contactosFiltrados = contactos.filter(contacto => {
@@ -154,85 +278,145 @@ const Contactos = () => {
       contacto.telefonoPrincipal.includes(busqueda) ||
       contacto.email.toLowerCase().includes(busqueda.toLowerCase());
 
-    const matchEtiqueta = filtroEtiqueta === 'todos' || contacto.etiquetas.includes(filtroEtiqueta);
+    const matchEtiqueta = filtroEtiqueta === 'todos' || (contacto.etiquetas || []).includes(filtroEtiqueta);
 
     return matchBusqueda && matchEtiqueta;
   });
 
+  const totalPaginas = Math.max(1, Math.ceil(contactosFiltrados.length / CONTACTOS_POR_PAGINA));
+  const contactosPaginados = contactosFiltrados.slice(
+    (paginaActual - 1) * CONTACTOS_POR_PAGINA,
+    paginaActual * CONTACTOS_POR_PAGINA
+  );
+
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [busqueda, filtroEtiqueta]);
+
   // Contar por etiqueta
   const contarPorEtiqueta = (etiqueta) => {
     if (etiqueta === 'todos') return contactos.length;
-    return contactos.filter(c => c.etiquetas.includes(etiqueta)).length;
+    return contactos.filter(c => (c.etiquetas || []).includes(etiqueta)).length;
   };
 
   // Handlers
-  const handleGuardarContacto = (data) => {
-    if (modalContacto.modo === 'crear') {
-      const nuevoContacto = {
-        ...data,
-        id: Date.now(),
-        fechaCreacion: new Date().toISOString().split('T')[0],
-        ultimoContacto: null
+  const handleGuardarContacto = async (data) => {
+    showLoading(modalContacto.modo === 'crear' ? 'Creando contacto...' : 'Guardando cambios...');
+    try {
+      const payload = {
+        nombre: data.nombre,
+        empresa: data.empresa || '',
+        telefono_principal: data.telefonoPrincipal || '',
+        telefono_movil: data.telefonoMovil || '',
+        telefono_trabajo: data.telefonoTrabajo || '',
+        email: data.email || '',
+        direccion: data.direccion || '',
+        notas: data.notas || '',
+        etiquetas: data.etiquetas || [],
       };
-      setContactos([nuevoContacto, ...contactos]);
-    } else {
-      setContactos(contactos.map(c => c.id === data.id ? data : c));
-      if (contactoDetalle?.id === data.id) {
-        setContactoDetalle(data);
+      if (modalContacto.modo === 'crear') {
+        const created = await contactService.create(payload);
+        const c = created?.contact || created;
+        setContactos([{
+          id: c.id,
+          nombre: c.nombre,
+          empresa: c.empresa || '',
+          telefonoPrincipal: c.telefono_principal || '',
+          telefonoMovil: c.telefono_movil || '',
+          telefonoTrabajo: c.telefono_trabajo || '',
+          email: c.email || '',
+          direccion: c.direccion || '',
+          notas: c.notas || '',
+          etiquetas: c.etiquetas || [],
+          fechaCreacion: c.created_at ? c.created_at.split('T')[0] : '',
+          ultimoContacto: c.ultimo_contacto || null,
+        }, ...contactos]);
+      } else {
+        const updated = await contactService.update(data.id, payload);
+        const c = updated?.contact || updated;
+        setContactos(contactos.map(x => x.id === data.id ? {
+          ...x,
+          nombre: c.nombre,
+          empresa: c.empresa || '',
+          telefonoPrincipal: c.telefono_principal || '',
+          telefonoMovil: c.telefono_movil || '',
+          telefonoTrabajo: c.telefono_trabajo || '',
+          email: c.email || '',
+          direccion: c.direccion || '',
+          notas: c.notas || '',
+          etiquetas: c.etiquetas || [],
+        } : x));
+        if (contactoDetalle?.id === data.id) {
+          setContactoDetalle({ ...contactoDetalle, ...c });
+        }
       }
+      setModalContacto({ open: false, modo: 'crear', data: null });
+    } catch (err) {
+      toast.error('Error guardando contacto: ' + (err?.response?.data?.error?.message || err.message));
+    } finally {
+      hideLoading();
     }
-    setModalContacto({ open: false, modo: 'crear', data: null });
   };
 
-  const handleEliminarContacto = (id) => {
-    if (confirm('¿Estás seguro de eliminar este contacto?')) {
+  const handleEliminarContacto = async (id) => {
+    if (!confirm('¿Estás seguro de eliminar este contacto?')) return;
+    showLoading('Eliminando...');
+    try {
+      await contactService.remove(id);
       setContactos(contactos.filter(c => c.id !== id));
       if (contactoDetalle?.id === id) {
         setContactoDetalle(null);
       }
+    } catch (err) {
+      toast.error('Error eliminando contacto: ' + (err?.response?.data?.error?.message || err.message));
+    } finally {
+      hideLoading();
     }
   };
 
   const handleLlamar = (telefono) => {
-    // Aquí se integraría con el Softphone
-    console.log('Llamando a:', telefono);
-    alert(`Iniciando llamada a ${telefono}\n(Integración con Softphone pendiente)`);
-  };
-
-  const getHistorialContacto = (contactoId) => {
-    return historialLlamadas.filter(h => h.contactoId === contactoId);
+    window.dispatchEvent(new CustomEvent('hablagt:softphone:call', { detail: { numero: telefono } }));
   };
 
   // Handlers para categorías
-  const handleGuardarCategoria = (key, data) => {
-    setEtiquetasConfig(prev => ({
-      ...prev,
-      [key]: data
-    }));
-  };
-
-  const handleEliminarCategoria = (key) => {
-    // Remover la categoría de todos los contactos que la tengan
-    setContactos(contactos.map(c => ({
-      ...c,
-      etiquetas: c.etiquetas.filter(e => e !== key)
-    })));
-    // Eliminar la categoría
-    const newConfig = { ...etiquetasConfig };
-    delete newConfig[key];
-    setEtiquetasConfig(newConfig);
-    // Si estaba filtrado por esa categoría, volver a todos
-    if (filtroEtiqueta === key) {
-      setFiltroEtiqueta('todos');
+  const handleGuardarCategoria = async (key, data) => {
+    showLoading('Guardando etiqueta...');
+    try {
+      if (etiquetasConfig[key]) {
+        await contactTagService.update(key, data);
+      } else {
+        await contactTagService.create({ key, ...data });
+      }
+      setEtiquetasConfig(prev => ({ ...prev, [key]: data }));
+    } catch (err) {
+      toast.error('Error guardando etiqueta: ' + (err?.response?.data?.error?.message || err.message));
+    } finally {
+      hideLoading();
     }
   };
 
-  const handleAgregarCategoria = (data) => {
+  const handleEliminarCategoria = async (key) => {
+    showLoading('Eliminando etiqueta...');
+    try {
+      await contactTagService.remove(key);
+      setContactos(contactos.map(c => ({
+        ...c,
+        etiquetas: (c.etiquetas || []).filter(e => e !== key)
+      })));
+      setEtiquetasConfig(prev => {
+        const { [key]: _, ...rest } = prev;
+        return rest;
+      });
+    } catch (err) {
+      toast.error('Error eliminando etiqueta: ' + (err?.response?.data?.error?.message || err.message));
+    } finally {
+      hideLoading();
+    }
+  };
+
+  const handleAgregarCategoria = async (data) => {
     const key = data.label.toLowerCase().replace(/\s+/g, '_');
-    setEtiquetasConfig(prev => ({
-      ...prev,
-      [key]: data
-    }));
+    await handleGuardarCategoria(key, data);
   };
 
   return (
@@ -247,11 +431,20 @@ const Contactos = () => {
           </div>
         </div>
         <div className="contactos-actions-header">
-          <button className="btn-secondary">
+          <button className="btn-secondary" title="Importar contactos desde un CSV" onClick={() => importRef.current?.click()}>
             <FiUpload />
             <span>Importar</span>
           </button>
-          <button className="btn-secondary">
+          <button
+            type="button"
+            className="contactos-template-link"
+            onClick={downloadTemplateCsv}
+            title="Descargar un CSV de ejemplo con las columnas que se pueden importar"
+          >
+            Plantilla
+          </button>
+          <input ref={importRef} type="file" accept=".csv,text/csv" hidden onChange={handleImportFile} />
+          <button className="btn-secondary" title="Exportar a CSV los contactos visibles" onClick={handleExport}>
             <FiDownload />
             <span>Exportar</span>
           </button>
@@ -292,9 +485,10 @@ const Contactos = () => {
                 <li
                   key={key}
                   className={filtroEtiqueta === key ? 'active' : ''}
+                  style={{ '--tag-color': config.color }}
                   onClick={() => setFiltroEtiqueta(key)}
                 >
-                  <FiTag style={{ color: config.color }} />
+                  <span className="etiqueta-dot" style={{ background: config.color }} />
                   <span>{config.label}</span>
                   <span className="count">{contarPorEtiqueta(key)}</span>
                 </li>
@@ -324,12 +518,29 @@ const Contactos = () => {
             <span className="results-count">
               {contactosFiltrados.length} contacto{contactosFiltrados.length !== 1 ? 's' : ''}
             </span>
+            <div className="vista-toggle">
+              <button
+                className={vista === 'cards' ? 'active' : ''}
+                onClick={() => setVista('cards')}
+                title="Vista de tarjetas"
+              >
+                <FiGrid />
+              </button>
+              <button
+                className={vista === 'list' ? 'active' : ''}
+                onClick={() => setVista('list')}
+                title="Vista de lista"
+              >
+                <FiList />
+              </button>
+            </div>
           </div>
 
           {/* Grid de contactos */}
+          {vista === 'cards' && (
           <div className="contactos-grid">
             <AnimatePresence>
-              {contactosFiltrados.map((contacto) => (
+              {contactosPaginados.map((contacto) => (
                 <motion.div
                   key={contacto.id}
                   className={`contacto-card ${contactoDetalle?.id === contacto.id ? 'selected' : ''}`}
@@ -379,19 +590,105 @@ const Contactos = () => {
               ))}
             </AnimatePresence>
 
-            {contactosFiltrados.length === 0 && (
+            {loaded && contactosFiltrados.length === 0 && (
               <div className="empty-state">
                 <FiUsers />
                 <p>No se encontraron contactos</p>
               </div>
             )}
           </div>
+          )}
+
+          {/* Lista de contactos */}
+          {vista === 'list' && (
+          <div className="contactos-list">
+            <AnimatePresence>
+              {contactosPaginados.map((contacto) => (
+                <motion.div
+                  key={contacto.id}
+                  className={`contacto-row ${contactoDetalle?.id === contacto.id ? 'selected' : ''}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  layout
+                  onClick={() => setContactoDetalle(contacto)}
+                >
+                  <div className="contacto-row-avatar">
+                    {contacto.nombre.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </div>
+                  <div className="contacto-row-info">
+                    <span className="contacto-row-nombre">{contacto.nombre}</span>
+                    {contacto.empresa && <span className="contacto-row-empresa">{contacto.empresa}</span>}
+                  </div>
+                  <div className="contacto-row-telefono">
+                    <FiPhone />
+                    {contacto.telefonoPrincipal}
+                  </div>
+                  <div className="contacto-row-etiquetas">
+                    {contacto.etiquetas.map(etiq => (
+                      <span
+                        key={etiq}
+                        className="etiqueta-badge"
+                        style={{ background: `${etiquetasConfig[etiq]?.color}20`, color: etiquetasConfig[etiq]?.color }}
+                      >
+                        {etiquetasConfig[etiq]?.label}
+                      </span>
+                    ))}
+                  </div>
+                  <button
+                    className="btn-call btn-call-sm"
+                    onClick={(e) => { e.stopPropagation(); handleLlamar(contacto.telefonoPrincipal); }}
+                    title="Llamar"
+                  >
+                    <FiPhoneCall />
+                  </button>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+
+            {loaded && contactosFiltrados.length === 0 && (
+              <div className="empty-state">
+                <FiUsers />
+                <p>No se encontraron contactos</p>
+              </div>
+            )}
+          </div>
+          )}
+
+          {/* Paginación */}
+          {contactosFiltrados.length > 0 && totalPaginas > 1 && (
+            <div className="paginacion">
+              <button
+                className="pag-btn"
+                disabled={paginaActual === 1}
+                onClick={() => setPaginaActual((p) => p - 1)}
+              >
+                <FiChevronLeft />
+              </button>
+              <span className="pag-info">Página {paginaActual} de {totalPaginas}</span>
+              <button
+                className="pag-btn"
+                disabled={paginaActual === totalPaginas}
+                onClick={() => setPaginaActual((p) => p + 1)}
+              >
+                <FiChevronRight />
+              </button>
+            </div>
+          )}
         </main>
 
         {/* Panel de detalle */}
         <AnimatePresence>
           {contactoDetalle && (
-            <motion.aside
+            <>
+              <motion.div
+                className="contacto-detalle-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setContactoDetalle(null)}
+              />
+              <motion.aside
               className="contacto-detalle"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -511,32 +808,9 @@ const Contactos = () => {
                 </div>
               )}
 
-              {/* Historial de llamadas */}
-              <div className="detalle-historial">
-                <h3>
-                  <FiClock />
-                  Historial de Llamadas
-                </h3>
-                <div className="historial-list">
-                  {getHistorialContacto(contactoDetalle.id).length > 0 ? (
-                    getHistorialContacto(contactoDetalle.id).map(llamada => (
-                      <div key={llamada.id} className="historial-item">
-                        <div className={`historial-icon ${llamada.tipo}`}>
-                          {llamada.tipo === 'entrante' ? <FiPhoneIncoming /> : <FiPhoneOutgoing />}
-                        </div>
-                        <div className="historial-info">
-                          <span className="historial-fecha">{llamada.fecha}</span>
-                          <span className="historial-meta">
-                            {llamada.duracion} · {llamada.agente}
-                          </span>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="historial-empty">Sin historial de llamadas</p>
-                  )}
-                </div>
-              </div>
+              <ContactCallHistory key={`h-${contactoDetalle.id}`} contacto={contactoDetalle} />
+
+              <ContactForms key={contactoDetalle.id} contacto={contactoDetalle} />
 
               <div className="detalle-footer">
                 <span>Creado: {contactoDetalle.fechaCreacion}</span>
@@ -544,7 +818,8 @@ const Contactos = () => {
                   <span>Último contacto: {contactoDetalle.ultimoContacto}</span>
                 )}
               </div>
-            </motion.aside>
+              </motion.aside>
+            </>
           )}
         </AnimatePresence>
       </div>
@@ -751,7 +1026,11 @@ const ModalContacto = ({ isOpen, modo, data, etiquetasConfig, onClose, onSave })
                     }}
                     onClick={() => toggleEtiqueta(key)}
                   >
-                    {form.etiquetas.includes(key) && <FiCheck />}
+                    {form.etiquetas.includes(key) ? (
+                      <FiCheck />
+                    ) : (
+                      <span className="etiqueta-dot" style={{ background: config.color }} />
+                    )}
                     {config.label}
                   </button>
                 ))}

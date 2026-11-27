@@ -1,4 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
+import { eventService, eventTypeService, contactService } from '../../services';
+import { useLoading } from '../../context/LoadingContext';
+import { useToast } from '../../context/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiCalendar,
@@ -22,6 +25,9 @@ import {
   FiSettings,
   FiTag
 } from 'react-icons/fi';
+import DatePicker from '../DatePicker';
+import TimePicker from '../TimePicker';
+import ContactAutocomplete from '../ContactAutocomplete';
 import './Agendas.css';
 
 // Configuración de tipos de eventos por defecto
@@ -136,16 +142,55 @@ const DIAS_SEMANA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 const Agendas = () => {
-  const [eventos, setEventos] = useState(eventosData);
-  const [vista, setVista] = useState('calendario'); // 'calendario' o 'lista'
-  const [fechaActual, setFechaActual] = useState(new Date(2024, 0, 15)); // Enero 2024 para demo
+  const { showLoading, hideLoading } = useLoading();
+  const toast = useToast();
+  const [eventos, setEventos] = useState([]);
+  const [vista, setVista] = useState('calendario');
+  const [fechaActual, setFechaActual] = useState(new Date());
   const [modalEvento, setModalEvento] = useState({ open: false, modo: 'crear', data: null });
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [eventoSeleccionado, setEventoSeleccionado] = useState(null);
 
-  // Estado para tipos de evento personalizables
   const [tiposEvento, setTiposEvento] = useState(tiposEventoDefault);
   const [modalTipos, setModalTipos] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      showLoading('Cargando agenda...');
+      try {
+        const [evs, types] = await Promise.all([
+          eventService.list({ page_size: 100, estado: 'pendiente' }),
+          eventTypeService.list(),
+        ]);
+        const items = evs?.items || evs || [];
+        setEventos(
+          items.map((e) => ({
+            id: e.id,
+            titulo: e.titulo,
+            tipo: e.tipo,
+            fecha: e.fecha ? e.fecha.split('T')[0] : '',
+            hora: e.hora ? e.hora.substring(0, 5) : '',
+            contacto: e.contacto || '',
+            telefono: e.telefono || '',
+            descripcion: e.descripcion || '',
+            agente: e.agente_nombre || '',
+            estado: e.estado || 'pendiente',
+          }))
+        );
+        const typeMap = {};
+        (types?.items || types || []).forEach((t) => {
+          typeMap[t.key] = { label: t.label, icon: t.icon, color: t.color };
+        });
+        if (Object.keys(typeMap).length) setTiposEvento({ ...tiposEventoDefault, ...typeMap });
+      } catch (err) {
+        console.error('Error cargando agenda', err);
+      } finally {
+        hideLoading();
+      }
+    };
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Obtener días del mes actual
   const diasDelMes = useMemo(() => {
@@ -227,31 +272,114 @@ const Agendas = () => {
   };
 
   // Handlers
-  const handleGuardarEvento = (data) => {
-    if (modalEvento.modo === 'crear') {
-      setEventos([...eventos, { ...data, id: Date.now() }]);
-    } else {
-      setEventos(eventos.map(ev => ev.id === data.id ? data : ev));
+  const normalizarTelefono = (t) => (t || '').replace(/\D/g, '');
+
+  // Si el evento trae un contacto+teléfono que no existe todavía en Contactos,
+  // lo agrega al directorio. Si el teléfono ya está registrado (con este
+  // nombre u otro), no crea un duplicado — el evento simplemente queda
+  // vinculado por teléfono al contacto que ya existe.
+  const sincronizarContacto = async (nombre, telefono) => {
+    const tel = (telefono || '').trim();
+    const nom = (nombre || '').trim();
+    if (!tel || !nom) return;
+    try {
+      const lista = await contactService.list({ page_size: 200 });
+      const telNorm = normalizarTelefono(tel);
+      const yaExiste = (lista?.items || []).some((c) => normalizarTelefono(c.telefono_principal) === telNorm);
+      if (!yaExiste) {
+        await contactService.create({ nombre: nom, telefono_principal: tel });
+        toast.success(`Se agregó "${nom}" a tus contactos`);
+      }
+    } catch {
+      // no bloquear el guardado del evento si esta sincronización falla
     }
-    setModalEvento({ open: false, modo: 'crear', data: null });
   };
 
-  const handleEliminarEvento = (id) => {
-    if (confirm('¿Estás seguro de eliminar este evento?')) {
-      setEventos(eventos.filter(ev => ev.id !== id));
+  const handleGuardarEvento = async (data) => {
+    showLoading(modalEvento.modo === 'crear' ? 'Creando evento...' : 'Guardando...');
+    try {
+      const payload = {
+        titulo: data.titulo,
+        tipo: data.tipo,
+        fecha: data.fecha,
+        hora: data.hora,
+        contacto: data.contacto || '',
+        telefono: data.telefono || '',
+        descripcion: data.descripcion || '',
+        estado: data.estado || 'pendiente',
+      };
+      if (modalEvento.modo === 'crear') {
+        const created = await eventService.create(payload);
+        const c = created?.event || created;
+        setEventos([...eventos, {
+          id: c.id,
+          titulo: c.titulo,
+          tipo: c.tipo,
+          fecha: c.fecha ? c.fecha.split('T')[0] : '',
+          hora: c.hora ? c.hora.substring(0, 5) : '',
+          contacto: c.contacto || '',
+          telefono: c.telefono || '',
+          descripcion: c.descripcion || '',
+          agente: c.agente_nombre || '',
+          estado: c.estado || 'pendiente',
+        }]);
+      } else {
+        const updated = await eventService.update(data.id, payload);
+        const c = updated?.event || updated;
+        setEventos(eventos.map((ev) => ev.id === data.id ? {
+          ...ev,
+          titulo: c.titulo,
+          tipo: c.tipo,
+          fecha: c.fecha ? c.fecha.split('T')[0] : '',
+          hora: c.hora ? c.hora.substring(0, 5) : '',
+          contacto: c.contacto || '',
+          telefono: c.telefono || '',
+          descripcion: c.descripcion || '',
+          estado: c.estado || 'pendiente',
+        } : ev));
+      }
+      await sincronizarContacto(payload.contacto, payload.telefono);
+      setModalEvento({ open: false, modo: 'crear', data: null });
+    } catch (err) {
+      toast.error('Error guardando evento: ' + (err?.response?.data?.error?.message || err.message));
+    } finally {
+      hideLoading();
+    }
+  };
+
+  const handleEliminarEvento = async (id) => {
+    if (!confirm('¿Estás seguro de eliminar este evento?')) return;
+    showLoading('Eliminando...');
+    try {
+      await eventService.remove(id);
+      setEventos(eventos.filter((ev) => ev.id !== id));
       setEventoSeleccionado(null);
+    } catch (err) {
+      toast.error('Error eliminando evento: ' + (err?.response?.data?.error?.message || err.message));
+    } finally {
+      hideLoading();
     }
   };
 
-  const handleCompletarEvento = (id) => {
-    setEventos(eventos.map(ev =>
-      ev.id === id ? { ...ev, estado: ev.estado === 'completado' ? 'pendiente' : 'completado' } : ev
-    ));
+  const handleCompletarEvento = async (id) => {
+    const ev = eventos.find((e) => e.id === id);
+    if (!ev) return;
+    const next = ev.estado === 'completado' ? 'pendiente' : 'completado';
+    setEventos(eventos.map((e) => e.id === id ? { ...e, estado: next } : e));
+    try {
+      if (next === 'completado') {
+        await eventService.complete(id);
+      } else {
+        await eventService.update(id, { ...ev, estado: next });
+      }
+    } catch (err) {
+      console.error('completar error', err);
+      setEventos(eventos.map((e) => e.id === id ? { ...e, estado: ev.estado } : e));
+    }
   };
 
   const handleLlamar = (telefono) => {
-    console.log('Llamando a:', telefono);
-    alert(`Iniciando llamada a ${telefono}\n(Integración con Softphone pendiente)`);
+    window.dispatchEvent(new CustomEvent('hablagt:softphone:call', { detail: { numero: telefono } }));
   };
 
   const handleNuevoEventoEnFecha = (fecha) => {
@@ -263,33 +391,46 @@ const Agendas = () => {
   };
 
   // Handlers para tipos de evento
-  const handleAgregarTipo = (data) => {
+  const handleAgregarTipo = async (data) => {
     const key = data.label.toLowerCase().replace(/\s+/g, '_');
-    setTiposEvento(prev => ({
-      ...prev,
-      [key]: data
-    }));
+    showLoading('Guardando tipo...');
+    try {
+      await eventTypeService.create({ key, label: data.label, icon: data.icon, color: data.color });
+      setTiposEvento((prev) => ({ ...prev, [key]: data }));
+    } catch (err) {
+      toast.error('Error guardando tipo: ' + (err?.response?.data?.error?.message || err.message));
+    } finally {
+      hideLoading();
+    }
   };
 
-  const handleEditarTipo = (key, data) => {
-    setTiposEvento(prev => ({
-      ...prev,
-      [key]: data
-    }));
+  const handleEditarTipo = async (key, data) => {
+    showLoading('Guardando tipo...');
+    try {
+      await eventTypeService.update(key, { label: data.label, icon: data.icon, color: data.color });
+      setTiposEvento((prev) => ({ ...prev, [key]: data }));
+    } catch (err) {
+      toast.error('Error guardando tipo: ' + (err?.response?.data?.error?.message || err.message));
+    } finally {
+      hideLoading();
+    }
   };
 
-  const handleEliminarTipo = (key) => {
-    // Cambiar eventos de ese tipo a 'tarea' por defecto
-    setEventos(eventos.map(ev =>
-      ev.tipo === key ? { ...ev, tipo: 'tarea' } : ev
-    ));
-    // Eliminar el tipo
-    const newTipos = { ...tiposEvento };
-    delete newTipos[key];
-    setTiposEvento(newTipos);
-    // Si estaba filtrado por ese tipo, volver a todos
-    if (filtroTipo === key) {
-      setFiltroTipo('todos');
+  const handleEliminarTipo = async (key) => {
+    showLoading('Eliminando tipo...');
+    try {
+      await eventTypeService.remove(key);
+      setEventos(eventos.map((ev) => ev.tipo === key ? { ...ev, tipo: 'tarea' } : ev));
+      const newTipos = { ...tiposEvento };
+      delete newTipos[key];
+      setTiposEvento(newTipos);
+      if (filtroTipo === key) {
+        setFiltroTipo('todos');
+      }
+    } catch (err) {
+      toast.error('Error eliminando tipo: ' + (err?.response?.data?.error?.message || err.message));
+    } finally {
+      hideLoading();
     }
   };
 
@@ -607,7 +748,9 @@ const Agendas = () => {
 
                 <div className="detalle-section">
                   <h4>Asignado a</h4>
-                  <span className="agente-badge">{eventoSeleccionado.agente}</span>
+                  {eventoSeleccionado.agente
+                    ? <span className="agente-badge">{eventoSeleccionado.agente}</span>
+                    : <p className="detalle-sin-asignar">Sin asignar</p>}
                 </div>
 
                 <div className="detalle-estado">
@@ -750,11 +893,9 @@ const ModalEvento = ({ isOpen, modo, data, tiposEvento, onClose, onSave }) => {
                   <FiCalendar />
                   Fecha *
                 </label>
-                <input
-                  type="date"
+                <DatePicker
                   value={form.fecha}
-                  onChange={(e) => setForm({ ...form, fecha: e.target.value })}
-                  required
+                  onChange={(fecha) => setForm({ ...form, fecha })}
                 />
               </div>
 
@@ -763,11 +904,9 @@ const ModalEvento = ({ isOpen, modo, data, tiposEvento, onClose, onSave }) => {
                   <FiClock />
                   Hora *
                 </label>
-                <input
-                  type="time"
+                <TimePicker
                   value={form.hora}
-                  onChange={(e) => setForm({ ...form, hora: e.target.value })}
-                  required
+                  onChange={(hora) => setForm({ ...form, hora })}
                 />
               </div>
             </div>
@@ -778,10 +917,10 @@ const ModalEvento = ({ isOpen, modo, data, tiposEvento, onClose, onSave }) => {
                   <FiUser />
                   Contacto
                 </label>
-                <input
-                  type="text"
+                <ContactAutocomplete
                   value={form.contacto}
-                  onChange={(e) => setForm({ ...form, contacto: e.target.value })}
+                  onChange={(contacto) => setForm({ ...form, contacto })}
+                  onSelect={(c) => setForm({ ...form, contacto: c.nombre, telefono: c.telefono_principal || c.telefono_movil || c.telefono_trabajo || form.telefono })}
                   placeholder="Nombre del contacto"
                 />
               </div>
@@ -789,13 +928,16 @@ const ModalEvento = ({ isOpen, modo, data, tiposEvento, onClose, onSave }) => {
               <div className="form-group">
                 <label>
                   <FiPhone />
-                  Teléfono
+                  Teléfono *
                 </label>
                 <input
                   type="tel"
                   value={form.telefono}
                   onChange={(e) => setForm({ ...form, telefono: e.target.value })}
                   placeholder="+502 5555-1234"
+                  required
+                  pattern="(?:\D*\d){4,}\D*"
+                  title="Al menos 4 dígitos. Con este número la IA reconoce al cliente cuando llama."
                 />
               </div>
             </div>

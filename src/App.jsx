@@ -1,8 +1,11 @@
-import { lazy, Suspense, useState, useEffect } from 'react';
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoadingProvider } from './context/LoadingContext';
+import { ToastProvider } from './context/ToastContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Loading from './components/Loading';
+import { RequireModule } from './context/ModulesContext';
 import './App.css';
 
 // Lazy loading de componentes
@@ -14,6 +17,10 @@ const Configuracion = lazy(() => import('./components/Configuracion'));
 const Contactos = lazy(() => import('./components/Contactos'));
 const Agendas = lazy(() => import('./components/Agendas'));
 const Hablaphone = lazy(() => import('./components/Hablaphone'));
+const ImpersonateEntry = lazy(() => import('./components/Impersonate/ImpersonateEntry'));
+const OperadoraIA = lazy(() => import('./components/OperadoraIA'));
+const Campanas = lazy(() => import('./components/Campanas'));
+const Formularios = lazy(() => import('./components/Formularios'));
 
 // Componente temporal para páginas en desarrollo
 const PlaceholderPage = ({ title }) => (
@@ -23,9 +30,9 @@ const PlaceholderPage = ({ title }) => (
     alignItems: 'center',
     justifyContent: 'center',
     height: '60vh',
-    color: '#64748b'
+    color: 'var(--text-muted)'
   }}>
-    <h2 style={{ fontSize: '1.5rem', marginBottom: '8px', color: '#0f172a' }}>{title}</h2>
+    <h2 style={{ fontSize: '1.5rem', marginBottom: '8px', color: 'var(--text)' }}>{title}</h2>
     <p>Esta sección está en desarrollo</p>
   </div>
 );
@@ -62,20 +69,6 @@ const PublicRoute = ({ children }) => {
 
 // Componente principal de rutas
 const AppRoutes = () => {
-  const [initialLoading, setInitialLoading] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setInitialLoading(false);
-    }, 2500);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (initialLoading) {
-    return <Loading mensaje="Iniciando HablaGT..." />;
-  }
-
   return (
     <LoadingProvider>
       <Suspense fallback={<Loading mensaje="Cargando..." />}>
@@ -90,6 +83,9 @@ const AppRoutes = () => {
             }
           />
 
+          {/* Entrada de sesión de soporte (impersonación desde el backoffice) */}
+          <Route path="/impersonate" element={<ImpersonateEntry />} />
+
           {/* Rutas protegidas con Layout */}
           <Route
             path="/"
@@ -103,9 +99,11 @@ const AppRoutes = () => {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="hablaphone" element={<Hablaphone />} />
             <Route path="reportes" element={<Reporteria />} />
-            <Route path="agendas" element={<Agendas />} />
+            <Route path="agendas" element={<RequireModule module="citas"><Agendas /></RequireModule>} />
             <Route path="contactos" element={<Contactos />} />
-            <Route path="ia-operadora" element={<PlaceholderPage title="Operadora IA" />} />
+            <Route path="ia-operadora" element={<OperadoraIA />} />
+            <Route path="campanas" element={<Campanas />} />
+            <Route path="formularios" element={<Formularios />} />
             <Route path="configuracion" element={<Configuracion />} />
           </Route>
 
@@ -119,11 +117,15 @@ const AppRoutes = () => {
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
-    </Router>
+    <ThemeProvider>
+      <Router>
+        <ToastProvider>
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
+        </ToastProvider>
+      </Router>
+    </ThemeProvider>
   );
 }
 

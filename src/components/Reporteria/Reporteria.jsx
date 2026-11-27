@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiPhone,
@@ -19,6 +19,11 @@ import {
   FiList,
   FiPieChart
 } from 'react-icons/fi';
+import { cdrService } from '../../services';
+import { checkRecording, recordingSrc } from '../../lib/recordings';
+import { useLoading } from '../../context/LoadingContext';
+import { useToast } from '../../context/ToastContext';
+import { useRealtimeEvents } from '../../hooks/useRealtimeEvents';
 import './Reporteria.css';
 
 // Datos de ejemplo para CDR con grabaciones
@@ -49,7 +54,11 @@ const hourlyData = [
   { hora: '17:00', llamadas: 22 },
 ];
 
+const fmtSeg = (s) => `${Math.floor((s || 0) / 60)}:${String(Math.floor((s || 0) % 60)).padStart(2, '0')}`;
+
 const Reporteria = () => {
+  const { showLoading, hideLoading } = useLoading();
+  const toast = useToast();
   const [filtroTipo, setFiltroTipo] = useState('all');
   const [filtroFechaInicio, setFiltroFechaInicio] = useState('');
   const [filtroFechaFin, setFiltroFechaFin] = useState('');
@@ -57,74 +66,164 @@ const Reporteria = () => {
   const [paginaActual, setPaginaActual] = useState(1);
   const [vistaActiva, setVistaActiva] = useState('tabla');
 
-  // Estado para reproductor de audio
+  const [cdrItems, setCdrItems] = useState([]);
+  const [cdrTotal, setCdrTotal] = useState(0);
+  const [stats, setStats] = useState({ totalLlamadas: 0, entrantes: 0, salientes: 0, perdidas: 0, duracionPromedio: 0, tasaConexion: 0 });
+  const [hourly, setHourly] = useState([]);
+  const [topAgentes, setTopAgentes] = useState([]);
+
   const [audioActivo, setAudioActivo] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
+  const [audioTimes, setAudioTimes] = useState({ cur: 0, dur: 0 });
   const audioRef = useRef(null);
 
-  const stats = {
-    totalLlamadas: 1256,
-    entrantes: 534,
-    salientes: 612,
-    perdidas: 110,
-    duracionPromedio: '04:32',
-    tasaConexion: 91.2
+  const realtimeTimer = useRef(null);
+
+  const fetchCDR = async ({ silent = false } = {}) => {
+    if (!silent) showLoading('Cargando reporte...');
+    try {
+      const params = {
+        page: paginaActual,
+        page_size: 25,
+      };
+      if (filtroTipo !== 'all') params.direccion = filtroTipo;
+      if (filtroFechaInicio) params.fecha_inicio = filtroFechaInicio;
+      if (filtroFechaFin) params.fecha_fin = filtroFechaFin;
+      if (busqueda) params.q = busqueda;
+      const [list, st] = await Promise.all([
+        cdrService.list(params),
+        cdrService.stats({
+          fecha_inicio: filtroFechaInicio || undefined,
+          fecha_fin: filtroFechaFin || undefined,
+        }),
+      ]);
+      const items = Array.isArray(list?.items) ? list.items : Array.isArray(list) ? list : [];
+      setCdrItems(items);
+      setCdrTotal(list?.total ?? items.length);
+      setStats({
+        totalLlamadas: st?.total || 0,
+        entrantes: st?.entrantes || 0,
+        salientes: st?.salientes || 0,
+        perdidas: st?.perdidas || 0,
+        duracionPromedio: st?.duracion_promedio_seg || 0,
+        tasaConexion: st?.tasa_conexion_pct || 0,
+      });
+      setHourly(st?.distribucion_horaria || []);
+      setTopAgentes(st?.top_agentes || []);
+    } catch (err) {
+      console.error('cdr load error', err);
+    } finally {
+      if (!silent) hideLoading();
+    }
   };
 
-  const maxLlamadas = Math.max(...hourlyData.map(d => d.llamadas));
+  useEffect(() => {
+    fetchCDR();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paginaActual, filtroTipo, filtroFechaInicio, filtroFechaFin]);
 
-  const filteredData = cdrData.filter(item => {
-    if (filtroTipo !== 'all' && item.tipo !== filtroTipo) return false;
+  // Live push: silently refresh the report when a call event arrives,
+  // debounced so a burst of ARI events triggers a single reload.
+  useRealtimeEvents((evt) => {
+    if (!evt || evt.type !== 'call.update') return;
+    if (realtimeTimer.current) clearTimeout(realtimeTimer.current);
+    realtimeTimer.current = setTimeout(() => fetchCDR({ silent: true }), 1500);
+  });
+
+  useEffect(() => () => {
+    if (realtimeTimer.current) clearTimeout(realtimeTimer.current);
+  }, []);
+
+  const maxLlamadas = Math.max(...hourly.map((d) => d.count), 1);
+
+  const filteredData = (Array.isArray(cdrItems) ? cdrItems : []).filter((item) => {
     if (busqueda) {
       const search = busqueda.toLowerCase();
       return (
-        item.origen.toLowerCase().includes(search) ||
-        item.destino.toLowerCase().includes(search) ||
-        item.agente.toLowerCase().includes(search)
+        (item.origen || '').toLowerCase().includes(search) ||
+        (item.destino || '').toLowerCase().includes(search) ||
+        (item.agente_nombre || '').toLowerCase().includes(search)
       );
     }
     return true;
   });
 
-  // Funciones del reproductor de audio
-  const handlePlayRecording = (item) => {
+  const handlePlayRecording = async (item) => {
+    if (!item.grabacion_url) {
+      toast.warning('No hay URL de grabación para esta llamada');
+      return;
+    }
     if (audioActivo?.id === item.id) {
-      // Toggle play/pause
       if (isPlaying) {
+        audioRef.current?.pause();
         setIsPlaying(false);
       } else {
+        audioRef.current?.play();
         setIsPlaying(true);
       }
     } else {
-      // Nueva grabación
-      setAudioActivo(item);
-      setIsPlaying(true);
+      try {
+        await checkRecording(item.grabacion_url);
+      } catch (err) {
+        toast.error(err.message);
+        return;
+      }
+      // El reproductor se monta al cambiar audioActivo; el efecto de abajo
+      // le asigna la URL y lo inicia cuando ya existe.
+      setAudioTimes({ cur: 0, dur: 0 });
+      setIsPlaying(false);
       setAudioProgress(0);
-
-      // Simular progreso de audio (en producción usarías un archivo real)
-      simulateAudioProgress();
+      setAudioActivo(item);
     }
   };
 
-  const simulateAudioProgress = () => {
-    setAudioProgress(0);
-    const interval = setInterval(() => {
-      setAudioProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsPlaying(false);
-          return 100;
-        }
-        return prev + 1;
-      });
-    }, 100);
-  };
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audioActivo || !audio) return;
+    audio.src = recordingSrc(audioActivo.grabacion_url);
+    audio.play().catch(() => {
+      setIsPlaying(false);
+      toast.error('No se pudo reproducir la grabación.');
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audioActivo?.id]);
 
   const closeAudioPlayer = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+    }
     setAudioActivo(null);
     setIsPlaying(false);
     setAudioProgress(0);
+  };
+
+  const handleExport = () => {
+    if (filteredData.length === 0) return;
+    const rows = filteredData.map((c) => ({
+      id: c.id,
+      fecha: c.occurred_at,
+      origen: c.origen,
+      destino: c.destino,
+      tipo: c.tipo,
+      duracion_seg: c.duracion_seg,
+      estado: c.estado,
+      agente: c.agente_nombre,
+      contacto: c.contacto_nombre,
+      grabacion: c.grabacion ? 'si' : 'no',
+      grabacion_url: c.grabacion_url || '',
+    }));
+    const csv = cdrService.toCSV(rows);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cdr-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -134,12 +233,12 @@ const Reporteria = () => {
         <div className="reporteria-title">
           <FiBarChart2 className="title-icon" />
           <div>
-            <h1>Reportería FreePBX</h1>
+            <h1>Reportería</h1>
             <p>Análisis detallado de llamadas y rendimiento</p>
           </div>
         </div>
         <div className="reporteria-actions">
-          <button className="btn-export">
+          <button className="btn-export" onClick={handleExport}>
             <FiDownload />
             <span>Exportar</span>
           </button>
@@ -281,29 +380,44 @@ const Reporteria = () => {
                   </tr>
                 </thead>
                 <tbody>
+                  {filteredData.length === 0 && (
+                    <tr>
+                      <td colSpan={8}>
+                        <div className="empty-state">
+                          <FiPhone />
+                          <p>No hay llamadas para los filtros seleccionados</p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
                   {filteredData.map((item) => (
                     <tr key={item.id}>
-                      <td className="fecha-cell">{item.fecha}</td>
+                      <td className="fecha-cell">{(item.occurred_at || '').replace('T', ' ').substring(0, 19)}</td>
                       <td>
                         <span className={`tipo-badge ${item.tipo}`}>
-                          {item.tipo === 'incoming' && <><FiPhoneIncoming /> Entrante</>}
-                          {item.tipo === 'outgoing' && <><FiPhoneOutgoing /> Saliente</>}
+                          {item.tipo === 'inbound' && <><FiPhoneIncoming /> Entrante</>}
+                          {item.tipo === 'outbound' && <><FiPhoneOutgoing /> Saliente</>}
                           {item.tipo === 'missed' && <><FiPhoneMissed /> Perdida</>}
+                          {(item.tipo !== 'inbound' && item.tipo !== 'outbound' && item.tipo !== 'missed') && item.tipo}
                         </span>
                       </td>
-                      <td>{item.origen}</td>
-                      <td>{item.destino}</td>
-                      <td>{item.agente}</td>
-                      <td className="duracion-cell">{item.duracion}</td>
+                      <td>{item.origen || '-'}</td>
+                      <td>{item.destino || '-'}</td>
+                      <td>{item.agente_nombre || '-'}</td>
+                      <td className="duracion-cell">
+                        {item.duracion_seg ? `${Math.floor(item.duracion_seg / 60)}:${(item.duracion_seg % 60).toString().padStart(2, '0')}` : '-'}
+                      </td>
                       <td>
                         <span className={`estado-badge ${item.estado}`}>
-                          {item.estado === 'answered' && 'Contestada'}
-                          {item.estado === 'no-answer' && 'Sin respuesta'}
-                          {item.estado === 'busy' && 'Ocupado'}
+                          {item.estado === 'completada' && 'Contestada'}
+                          {item.estado === 'perdida' && 'Sin respuesta'}
+                          {item.estado === 'ocupado' && 'Ocupado'}
+                          {item.estado === 'fallida' && 'Fallida'}
+                          {item.estado === 'en_curso' && 'En curso'}
                         </span>
                       </td>
                       <td>
-                        {item.grabacion ? (
+                        {item.grabacion && item.grabacion_url ? (
                           <button
                             className={`btn-play ${audioActivo?.id === item.id && isPlaying ? 'playing' : ''}`}
                             onClick={() => handlePlayRecording(item)}
@@ -326,7 +440,7 @@ const Reporteria = () => {
               <button className="pag-btn" disabled={paginaActual === 1} onClick={() => setPaginaActual(paginaActual - 1)}>
                 <FiChevronLeft />
               </button>
-              <span className="pag-info">Página {paginaActual} de 10</span>
+              <span className="pag-info">Página {paginaActual} de {Math.max(1, Math.ceil(cdrTotal / 25))}</span>
               <button className="pag-btn" onClick={() => setPaginaActual(paginaActual + 1)}>
                 <FiChevronRight />
               </button>
@@ -348,17 +462,17 @@ const Reporteria = () => {
                 <span className="grafico-subtitle">Distribución del día</span>
               </div>
               <div className="grafico-barras">
-                {hourlyData.map((item, index) => (
+                {hourly.map((item, index) => (
                   <div key={index} className="barra-wrapper">
                     <motion.div
                       className="barra"
                       initial={{ height: 0 }}
-                      animate={{ height: `${(item.llamadas / maxLlamadas) * 100}%` }}
+                      animate={{ height: `${(item.count / maxLlamadas) * 100}%` }}
                       transition={{ delay: index * 0.05, duration: 0.5 }}
                     >
-                      <span className="barra-valor">{item.llamadas}</span>
+                      <span className="barra-valor">{item.count}</span>
                     </motion.div>
-                    <span className="barra-label">{item.hora}</span>
+                    <span className="barra-label">{item.hour}:00</span>
                   </div>
                 ))}
               </div>
@@ -371,53 +485,27 @@ const Reporteria = () => {
                 <span className="grafico-subtitle">Porcentaje de llamadas</span>
               </div>
               <div className="distribucion-tipos">
-                <div className="tipo-item">
-                  <div className="tipo-info">
-                    <span className="tipo-color entrantes"></span>
-                    <span className="tipo-nombre">Entrantes</span>
+                {[
+                  { key: 'Entrantes', pct: stats.total > 0 ? (stats.entrantes / stats.total * 100).toFixed(1) : 0, cls: 'entrantes' },
+                  { key: 'Salientes', pct: stats.total > 0 ? (stats.salientes / stats.total * 100).toFixed(1) : 0, cls: 'salientes' },
+                  { key: 'Perdidas', pct: stats.total > 0 ? (stats.perdidas / stats.total * 100).toFixed(1) : 0, cls: 'perdidas' },
+                ].map((t, i) => (
+                  <div key={t.key} className="tipo-item">
+                    <div className="tipo-info">
+                      <span className={`tipo-color ${t.cls}`}></span>
+                      <span className="tipo-nombre">{t.key}</span>
+                    </div>
+                    <div className="tipo-barra-container">
+                      <motion.div
+                        className={`tipo-barra ${t.cls}`}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${t.pct}%` }}
+                        transition={{ duration: 0.8, delay: i * 0.1 }}
+                      />
+                    </div>
+                    <span className="tipo-porcentaje">{t.pct}%</span>
                   </div>
-                  <div className="tipo-barra-container">
-                    <motion.div
-                      className="tipo-barra entrantes"
-                      initial={{ width: 0 }}
-                      animate={{ width: '42.5%' }}
-                      transition={{ duration: 0.8 }}
-                    />
-                  </div>
-                  <span className="tipo-porcentaje">42.5%</span>
-                </div>
-
-                <div className="tipo-item">
-                  <div className="tipo-info">
-                    <span className="tipo-color salientes"></span>
-                    <span className="tipo-nombre">Salientes</span>
-                  </div>
-                  <div className="tipo-barra-container">
-                    <motion.div
-                      className="tipo-barra salientes"
-                      initial={{ width: 0 }}
-                      animate={{ width: '48.7%' }}
-                      transition={{ duration: 0.8, delay: 0.1 }}
-                    />
-                  </div>
-                  <span className="tipo-porcentaje">48.7%</span>
-                </div>
-
-                <div className="tipo-item">
-                  <div className="tipo-info">
-                    <span className="tipo-color perdidas"></span>
-                    <span className="tipo-nombre">Perdidas</span>
-                  </div>
-                  <div className="tipo-barra-container">
-                    <motion.div
-                      className="tipo-barra perdidas"
-                      initial={{ width: 0 }}
-                      animate={{ width: '8.8%' }}
-                      transition={{ duration: 0.8, delay: 0.2 }}
-                    />
-                  </div>
-                  <span className="tipo-porcentaje">8.8%</span>
-                </div>
+                ))}
               </div>
             </div>
 
@@ -428,29 +516,31 @@ const Reporteria = () => {
                 <span className="grafico-subtitle">Por cantidad de llamadas</span>
               </div>
               <div className="top-agentes">
-                {[
-                  { nombre: 'María García', llamadas: 156, avatar: 'MG' },
-                  { nombre: 'Juan Pérez', llamadas: 142, avatar: 'JP' },
-                  { nombre: 'Carlos López', llamadas: 128, avatar: 'CL' },
-                  { nombre: 'Ana Martínez', llamadas: 98, avatar: 'AM' },
-                ].map((agente, index) => (
-                  <div key={index} className="agente-row">
-                    <div className="agente-rank">#{index + 1}</div>
-                    <div className="agente-avatar">{agente.avatar}</div>
-                    <div className="agente-info">
-                      <span className="agente-nombre">{agente.nombre}</span>
-                      <div className="agente-barra-container">
-                        <motion.div
-                          className="agente-barra"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(agente.llamadas / 156) * 100}%` }}
-                          transition={{ duration: 0.6, delay: index * 0.1 }}
-                        />
+                {topAgentes.length > 0 ? topAgentes.map((agente, index) => {
+                  const initials = (agente.agente_nombre || agente.nombre || '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '??';
+                  const agenteTotal = agente.total || agente.total_llamadas || 0;
+                  const maxCalls = Math.max(...topAgentes.map(a => a.total || a.total_llamadas || 0), 1);
+                  return (
+                    <div key={index} className="agente-row">
+                      <div className="agente-rank">#{index + 1}</div>
+                      <div className="agente-avatar">{initials}</div>
+                      <div className="agente-info">
+                        <span className="agente-nombre">{agente.nombre}</span>
+                        <div className="agente-barra-container">
+                          <motion.div
+                            className="agente-barra"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${(agenteTotal / maxCalls) * 100}%` }}
+                            transition={{ duration: 0.6, delay: index * 0.1 }}
+                          />
+                        </div>
                       </div>
+                      <span className="agente-llamadas">{agenteTotal}</span>
                     </div>
-                    <span className="agente-llamadas">{agente.llamadas}</span>
-                  </div>
-                ))}
+                  );
+                }) : (
+                  <p style={{ color: '#94a3b8', textAlign: 'center', padding: 20 }}>Sin datos de agentes</p>
+                )}
               </div>
             </div>
           </motion.div>
@@ -473,7 +563,7 @@ const Reporteria = () => {
                 <div className="audio-details">
                   <span className="audio-title">Grabación de llamada</span>
                   <span className="audio-meta">
-                    {audioActivo.origen} → {audioActivo.destino} | {audioActivo.duracion}
+                    {audioActivo.origen} → {audioActivo.destino} | {audioActivo.duracion_seg ? `${Math.floor(audioActivo.duracion_seg / 60)}:${(audioActivo.duracion_seg % 60).toString().padStart(2, '0')}` : ''}
                   </span>
                 </div>
               </div>
@@ -481,7 +571,7 @@ const Reporteria = () => {
               <div className="audio-controls">
                 <button
                   className="audio-btn play"
-                  onClick={() => setIsPlaying(!isPlaying)}
+                  onClick={() => handlePlayRecording(audioActivo)}
                 >
                   {isPlaying ? <FiPause /> : <FiPlay />}
                 </button>
@@ -494,7 +584,7 @@ const Reporteria = () => {
                 </div>
 
                 <span className="audio-time">
-                  {Math.floor(audioProgress * 0.05)}:{String(Math.floor((audioProgress * 0.05 % 1) * 60)).padStart(2, '0')}
+                  {fmtSeg(audioTimes.cur)} / {fmtSeg(audioTimes.dur)}
                 </span>
 
                 <button className="audio-btn close" onClick={closeAudioPlayer}>
@@ -502,6 +592,18 @@ const Reporteria = () => {
                 </button>
               </div>
             </div>
+            <audio
+              ref={audioRef}
+              onTimeUpdate={(e) => {
+                const a = e.currentTarget;
+                if (a.duration) setAudioProgress((a.currentTime / a.duration) * 100);
+                setAudioTimes({ cur: a.currentTime, dur: Number.isFinite(a.duration) ? a.duration : 0 });
+              }}
+              onEnded={() => { setIsPlaying(false); setAudioProgress(0); }}
+              onPause={() => setIsPlaying(false)}
+              onPlay={() => setIsPlaying(true)}
+              style={{ display: 'none' }}
+            />
           </motion.div>
         )}
       </AnimatePresence>

@@ -1,4 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { cdrService, agentSelfService } from '../../services';
+import { checkRecording, recordingSrc } from '../../lib/recordings';
+import AudioSettings from './AudioSettings';
+import { usePresence } from '../../hooks/usePresence';
+import { useLoading } from '../../context/LoadingContext';
+import { useToast } from '../../context/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiPhone,
@@ -13,107 +19,193 @@ import {
   FiPlay,
   FiUsers,
   FiClock,
-  FiCalendar,
   FiSearch,
-  FiFilter,
   FiSettings,
-  FiVolume2,
-  FiHeadphones,
   FiActivity,
   FiTrendingUp,
   FiBarChart2,
   FiList,
-  FiGrid,
   FiUser,
   FiCheck,
   FiX,
   FiChevronDown,
-  FiRefreshCw,
-  FiDownload,
-  FiExternalLink
+  FiRefreshCw
 } from 'react-icons/fi';
 import './Hablaphone.css';
 
 // Estados disponibles del agente
+// Mismos nombres que el selector del encabezado (usePresence). "En llamada"
+// solo se muestra si el sistema lo pone; no se elige a mano.
 const estadosAgente = [
   { id: 'disponible', label: 'Disponible', color: '#10b981', icon: FiCheck },
-  { id: 'en_llamada', label: 'En Llamada', color: '#6366f1', icon: FiPhone },
-  { id: 'pausa', label: 'En Pausa', color: '#f59e0b', icon: FiPause },
-  { id: 'no_disponible', label: 'No Disponible', color: '#ef4444', icon: FiX }
+  { id: 'en_llamada', label: 'En llamada', color: '#6366f1', icon: FiPhone, auto: true },
+  { id: 'pausa', label: 'Ocupado', color: '#f59e0b', icon: FiPause },
+  { id: 'no_disponible', label: 'Ausente', color: '#ef4444', icon: FiX }
 ];
 
-// Datos de ejemplo - Historial de llamadas
-const historialData = [
-  { id: 1, tipo: 'saliente', numero: '+502 5555-1234', contacto: 'Carlos Mendoza', duracion: '5:23', fecha: '2024-01-15', hora: '09:15', estado: 'completada', grabacion: true },
-  { id: 2, tipo: 'entrante', numero: '+502 5555-6789', contacto: 'María López', duracion: '12:45', fecha: '2024-01-15', hora: '10:30', estado: 'completada', grabacion: true },
-  { id: 3, tipo: 'perdida', numero: '+502 5555-2345', contacto: 'Desconocido', duracion: '-', fecha: '2024-01-15', hora: '11:00', estado: 'perdida', grabacion: false },
-  { id: 4, tipo: 'saliente', numero: '+502 5555-3456', contacto: 'Roberto Juárez', duracion: '3:12', fecha: '2024-01-15', hora: '11:45', estado: 'completada', grabacion: true },
-  { id: 5, tipo: 'entrante', numero: '+502 5555-4567', contacto: 'Ana Martínez', duracion: '8:30', fecha: '2024-01-15', hora: '14:20', estado: 'completada', grabacion: false },
-  { id: 6, tipo: 'saliente', numero: '+502 5555-5678', contacto: 'Pedro García', duracion: '2:15', fecha: '2024-01-14', hora: '16:00', estado: 'completada', grabacion: true },
-  { id: 7, tipo: 'perdida', numero: '+502 5555-6789', contacto: 'Sandra López', duracion: '-', fecha: '2024-01-14', hora: '09:30', estado: 'perdida', grabacion: false },
-  { id: 8, tipo: 'entrante', numero: '+502 5555-7890', contacto: 'Luis Hernández', duracion: '15:45', fecha: '2024-01-14', hora: '10:15', estado: 'completada', grabacion: true },
-];
-
-// Estadísticas de ejemplo
-const estadisticasData = {
-  hoy: {
-    llamadasRealizadas: 24,
-    llamadasRecibidas: 18,
-    llamadasPerdidas: 3,
-    tiempoTotal: '2h 45m',
-    tiempoPromedio: '4:30',
-    tasaRespuesta: 85
-  },
-  semana: {
-    llamadasRealizadas: 156,
-    llamadasRecibidas: 132,
-    llamadasPerdidas: 12,
-    tiempoTotal: '18h 30m',
-    tiempoPromedio: '5:15',
-    tasaRespuesta: 91
-  }
+// Valores por defecto mientras cargan las estadísticas reales (CDR).
+const ESTADISTICAS_VACIAS = {
+  llamadasRealizadas: 0,
+  llamadasRecibidas: 0,
+  llamadasPerdidas: 0,
+  tiempoTotal: '0h 0m',
+  tiempoPromedio: '0:00',
+  tasaRespuesta: 0,
 };
 
 const Hablaphone = () => {
   const [tabActivo, setTabActivo] = useState('telefono');
-  const [estadoAgente, setEstadoAgente] = useState('disponible');
+  // Estado del agente compartido con el encabezado (antes era una copia
+  // local que siempre arrancaba en "Disponible" y no se sincronizaba).
+  const { presence: estadoAgente, changePresence } = usePresence();
   const [showEstados, setShowEstados] = useState(false);
   const [numeroMarcado, setNumeroMarcado] = useState('');
-  const [enLlamada, setEnLlamada] = useState(false);
-  const [llamadaActiva, setLlamadaActiva] = useState(null);
-  const [silenciado, setsilenciado] = useState(false);
-  const [enEspera, setEnEspera] = useState(false);
-  const [tiempoLlamada, setTiempoLlamada] = useState(0);
+  // Estado real de la llamada, publicado por el softphone (único dueño de la
+  // llamada). Esta pantalla lo muestra y le envía órdenes; antes tenía su
+  // propia llamada simulada y "Colgar" no cortaba la llamada real.
+  const [sp, setSp] = useState({ callState: 'idle' });
+  useEffect(() => {
+    const onState = (e) => setSp(e.detail || { callState: 'idle' });
+    window.addEventListener('hablagt:softphone:state', onState);
+    window.dispatchEvent(new CustomEvent('hablagt:softphone:command', { detail: { action: 'query' } }));
+    return () => window.removeEventListener('hablagt:softphone:state', onState);
+  }, []);
+  const softphone = (action) =>
+    window.dispatchEvent(new CustomEvent('hablagt:softphone:command', { detail: { action } }));
+  const enLlamada = sp.callState === 'calling' || sp.callState === 'connected';
+  const llamadaActiva = enLlamada
+    ? { numero: sp.numero, contacto: sp.callState === 'calling' ? 'Marcando…' : 'Conectado' }
+    : null;
+  const silenciado = Boolean(sp.muted);
+  const enEspera = Boolean(sp.onHold);
+  const tiempoLlamada = sp.duration || 0;
 
   // Historial
-  const [historial, setHistorial] = useState(historialData);
+  const [historial, setHistorial] = useState([]);
   const [filtroHistorial, setFiltroHistorial] = useState('todos');
   const [busquedaHistorial, setBusquedaHistorial] = useState('');
 
-  // Estadísticas
+  // Estadísticas (CDR reales)
   const [periodoStats, setPeriodoStats] = useState('hoy');
+  const [estadisticas, setEstadisticas] = useState(ESTADISTICAS_VACIAS);
+  const [cargandoStats, setCargandoStats] = useState(false);
 
-  // Configuración
-  const [configAudio, setConfigAudio] = useState({
-    microfono: 'default',
-    altavoz: 'default',
-    volumenMic: 80,
-    volumenAltavoz: 70,
-    notificaciones: true,
-    autoAnswer: false,
-    grabacionAuto: true
-  });
+  const [sipInfo, setSipInfo] = useState({ extension: '', servidor: '', estado: 'desconectado' });
+  const { showLoading, hideLoading } = useLoading();
+  const toast = useToast();
 
-  // Timer de llamada
   useEffect(() => {
-    let interval;
-    if (enLlamada) {
-      interval = setInterval(() => {
-        setTiempoLlamada(prev => prev + 1);
-      }, 1000);
+    const load = async () => {
+      try {
+        const [hist, sip] = await Promise.all([
+          cdrService.list({ page_size: 50, page: 1 }),
+          agentSelfService.getSIP().catch(() => ({})),
+        ]);
+        const items = hist?.items || hist || [];
+        setHistorial(
+          items.map((c) => ({
+            id: c.id,
+            // En las salientes el origen es la extensión del agente: el número
+            // del cliente es el destino.
+            numero: (c.tipo === 'outbound' ? c.destino || c.origen : c.origen || c.destino) || '',
+            contacto: c.contacto_nombre || (c.tipo === 'outbound' ? c.destino : c.origen) || c.agente_nombre || '',
+            tipo: c.tipo,
+            duracion: c.duracion_seg || 0,
+            fecha: c.occurred_at,
+            estado: c.estado,
+            grabacion: Boolean(c.grabacion && c.grabacion_url),
+            grabacion_url: c.grabacion_url || '',
+          }))
+        );
+        setSipInfo({
+          extension: sip?.extension || '',
+          servidor: sip?.servidor || sip?.server || '',
+          estado: sip?.estado || 'desconectado',
+        });
+      } catch (err) {
+        console.error('hablaphone load error', err);
+      }
+    };
+    load();
+  }, []);
+
+  // Estadísticas reales (CDR) para el período seleccionado. El backend filtra
+  // por occurred_at >= fecha_inicio AND < fecha_fin (acepta YYYY-MM-DD).
+  const loadStats = useCallback(async () => {
+    setCargandoStats(true);
+    try {
+      const toYMD = (d) => d.toISOString().slice(0, 10);
+      const hoy = new Date();
+      const inicio = new Date(hoy);
+      if (periodoStats === 'semana') inicio.setDate(inicio.getDate() - 6);
+      const fin = new Date(hoy);
+      fin.setDate(fin.getDate() + 1);
+      const st = await cdrService.stats({ fecha_inicio: toYMD(inicio), fecha_fin: toYMD(fin) });
+      const porTipo = st?.por_tipo || {};
+      const porEstado = st?.por_estado || {};
+      const total = st?.total || 0;
+      const avg = st?.duracion_promedio_seg || 0;
+      const completadas = porEstado.completada || 0;
+      const totalSeg = Math.round(avg * completadas); // sin SUM en el backend: avg × completadas
+      const horas = Math.floor(totalSeg / 3600);
+      const mins = Math.floor((totalSeg % 3600) / 60);
+      const promMin = Math.floor(avg / 60);
+      const promSec = Math.round(avg % 60);
+      setEstadisticas({
+        llamadasRealizadas: porTipo.outbound || 0,
+        llamadasRecibidas: porTipo.inbound || 0,
+        llamadasPerdidas: porEstado.perdida || 0,
+        tiempoTotal: `${horas}h ${mins}m`,
+        tiempoPromedio: `${promMin}:${String(promSec).padStart(2, '0')}`,
+        tasaRespuesta: total > 0 ? Math.round((completadas / total) * 100) : 0,
+      });
+    } catch (err) {
+      console.error('stats load error', err);
+      setEstadisticas(ESTADISTICAS_VACIAS);
+    } finally {
+      setCargandoStats(false);
     }
-    return () => clearInterval(interval);
-  }, [enLlamada]);
+  }, [periodoStats]);
+
+  // Cargar al abrir la pestaña o cambiar de período.
+  useEffect(() => {
+    if (tabActivo === 'estadisticas') loadStats();
+  }, [tabActivo, loadStats]);
+
+  const handleSipReconnect = async () => {
+    showLoading('Reconectando SIP...');
+    try {
+      await agentSelfService.sipReconnect();
+      setSipInfo((prev) => ({ ...prev, estado: 'reconectando' }));
+      setTimeout(async () => {
+        try {
+          const sip = await agentSelfService.getSIP();
+          setSipInfo((prev) => ({
+            extension: sip?.extension || prev.extension,
+            servidor: sip?.servidor || sip?.server || prev.servidor,
+            estado: sip?.estado || 'conectado',
+          }));
+        } finally {
+          hideLoading();
+        }
+      }, 1500);
+    } catch (err) {
+      hideLoading();
+      toast.error('Error al reconectar: ' + (err?.response?.data?.error?.message || err.message));
+    }
+  };
+
+  const handleCambiarEstado = async (nuevoEstado) => {
+    setShowEstados(false);
+    if (!(await changePresence(nuevoEstado))) toast.error('No se pudo cambiar tu estado.');
+  };
+
+  const handleLlamar = async () => {
+    if (numeroMarcado.length === 0) return;
+    // El softphone hace la llamada real y avisa su estado (ver arriba).
+    window.dispatchEvent(new CustomEvent('hablagt:softphone:call', { detail: { numero: numeroMarcado } }));
+  };
+
 
   const formatTiempo = (segundos) => {
     const mins = Math.floor(segundos / 60);
@@ -130,33 +222,37 @@ const Hablaphone = () => {
     setNumeroMarcado(prev => prev.slice(0, -1));
   };
 
-  const handleLlamar = () => {
-    if (numeroMarcado.length > 0) {
-      setEnLlamada(true);
-      setLlamadaActiva({
-        numero: numeroMarcado,
-        contacto: 'Marcando...',
-        tipo: 'saliente'
-      });
-      setTiempoLlamada(0);
-      setEstadoAgente('en_llamada');
-    }
-  };
+  const handleColgar = () => softphone('hangup');
 
-  const handleColgar = () => {
-    setEnLlamada(false);
-    setLlamadaActiva(null);
-    setTiempoLlamada(0);
-    setsilenciado(false);
-    setEnEspera(false);
-    setEstadoAgente('disponible');
+  // Grabaciones del historial: un solo reproductor para la página.
+  const audioRef = useRef(null);
+  const [sonando, setSonando] = useState(null);
+  const toggleGrabacion = async (llamada) => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (sonando === llamada.id) {
+      audio.pause();
+      setSonando(null);
+      return;
+    }
+    try {
+      await checkRecording(llamada.grabacion_url);
+    } catch (err) {
+      toast.error(err.message);
+      return;
+    }
+    audio.src = recordingSrc(llamada.grabacion_url);
+    audio.play().then(() => setSonando(llamada.id)).catch(() => {
+      setSonando(null);
+      toast.error('No se pudo reproducir la grabación.');
+    });
   };
 
   // Filtrar historial
   const historialFiltrado = historial.filter(llamada => {
     const matchTipo = filtroHistorial === 'todos' || llamada.tipo === filtroHistorial;
-    const matchBusqueda = llamada.contacto.toLowerCase().includes(busquedaHistorial.toLowerCase()) ||
-                          llamada.numero.includes(busquedaHistorial);
+    const matchBusqueda = (llamada.contacto || '').toLowerCase().includes(busquedaHistorial.toLowerCase()) ||
+                          (llamada.numero || '').includes(busquedaHistorial);
     return matchTipo && matchBusqueda;
   });
 
@@ -172,6 +268,7 @@ const Hablaphone = () => {
 
   return (
     <div className="hablaphone">
+      <audio ref={audioRef} onEnded={() => setSonando(null)} hidden />
       {/* Header */}
       <div className="hablaphone-header">
         <div className="hablaphone-title">
@@ -203,16 +300,13 @@ const Hablaphone = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
               >
-                {estadosAgente.map(estado => {
+                {estadosAgente.filter((e) => !e.auto).map(estado => {
                   const Icon = estado.icon;
                   return (
                     <button
                       key={estado.id}
                       className={`estado-option ${estadoAgente === estado.id ? 'active' : ''}`}
-                      onClick={() => {
-                        setEstadoAgente(estado.id);
-                        setShowEstados(false);
-                      }}
+                      onClick={() => handleCambiarEstado(estado.id)}
                     >
                       <span className="estado-dot" style={{ background: estado.color }}></span>
                       <Icon style={{ color: estado.color }} />
@@ -337,19 +431,19 @@ const Hablaphone = () => {
                       <div className="llamada-controles">
                         <button
                           className={`control-btn ${silenciado ? 'active' : ''}`}
-                          onClick={() => setsilenciado(!silenciado)}
+                          onClick={() => softphone('mute')}
                         >
                           {silenciado ? <FiMicOff /> : <FiMic />}
                           <span>{silenciado ? 'Activar' : 'Silenciar'}</span>
                         </button>
                         <button
                           className={`control-btn ${enEspera ? 'active' : ''}`}
-                          onClick={() => setEnEspera(!enEspera)}
+                          onClick={() => softphone('hold')}
                         >
                           {enEspera ? <FiPlay /> : <FiPause />}
                           <span>{enEspera ? 'Continuar' : 'Espera'}</span>
                         </button>
-                        <button className="control-btn">
+                        <button className="control-btn" onClick={() => softphone('transfer')}>
                           <FiUsers />
                           <span>Transferir</span>
                         </button>
@@ -464,8 +558,13 @@ const Hablaphone = () => {
                           <FiPhone />
                         </button>
                         {llamada.grabacion && (
-                          <button className="btn-accion grabar" title="Escuchar grabación">
-                            <FiPlay />
+                          <button
+                            className={`btn-accion grabar ${sonando === llamada.id ? 'active' : ''}`}
+                            title={sonando === llamada.id ? 'Pausar grabación' : 'Escuchar grabación'}
+                            aria-label={sonando === llamada.id ? 'Pausar grabación' : 'Escuchar grabación'}
+                            onClick={() => toggleGrabacion(llamada)}
+                          >
+                            {sonando === llamada.id ? <FiPause /> : <FiPlay />}
                           </button>
                         )}
                       </span>
@@ -500,8 +599,8 @@ const Hablaphone = () => {
                     Esta Semana
                   </button>
                 </div>
-                <button className="btn-refresh">
-                  <FiRefreshCw />
+                <button className="btn-refresh" onClick={loadStats} disabled={cargandoStats}>
+                  <FiRefreshCw className={cargandoStats ? 'spin' : ''} />
                   Actualizar
                 </button>
               </div>
@@ -512,7 +611,7 @@ const Hablaphone = () => {
                     <FiPhoneOutgoing />
                   </div>
                   <div className="stat-info">
-                    <span className="stat-valor">{estadisticasData[periodoStats].llamadasRealizadas}</span>
+                    <span className="stat-valor">{estadisticas.llamadasRealizadas}</span>
                     <span className="stat-label">Llamadas Realizadas</span>
                   </div>
                 </div>
@@ -522,7 +621,7 @@ const Hablaphone = () => {
                     <FiPhoneIncoming />
                   </div>
                   <div className="stat-info">
-                    <span className="stat-valor">{estadisticasData[periodoStats].llamadasRecibidas}</span>
+                    <span className="stat-valor">{estadisticas.llamadasRecibidas}</span>
                     <span className="stat-label">Llamadas Recibidas</span>
                   </div>
                 </div>
@@ -532,7 +631,7 @@ const Hablaphone = () => {
                     <FiPhoneMissed />
                   </div>
                   <div className="stat-info">
-                    <span className="stat-valor">{estadisticasData[periodoStats].llamadasPerdidas}</span>
+                    <span className="stat-valor">{estadisticas.llamadasPerdidas}</span>
                     <span className="stat-label">Llamadas Perdidas</span>
                   </div>
                 </div>
@@ -542,7 +641,7 @@ const Hablaphone = () => {
                     <FiClock />
                   </div>
                   <div className="stat-info">
-                    <span className="stat-valor">{estadisticasData[periodoStats].tiempoTotal}</span>
+                    <span className="stat-valor">{estadisticas.tiempoTotal}</span>
                     <span className="stat-label">Tiempo Total</span>
                   </div>
                 </div>
@@ -552,7 +651,7 @@ const Hablaphone = () => {
                     <FiActivity />
                   </div>
                   <div className="stat-info">
-                    <span className="stat-valor">{estadisticasData[periodoStats].tiempoPromedio}</span>
+                    <span className="stat-valor">{estadisticas.tiempoPromedio}</span>
                     <span className="stat-label">Duración Promedio</span>
                   </div>
                 </div>
@@ -562,7 +661,7 @@ const Hablaphone = () => {
                     <FiTrendingUp />
                   </div>
                   <div className="stat-info">
-                    <span className="stat-valor">{estadisticasData[periodoStats].tasaRespuesta}%</span>
+                    <span className="stat-valor">{estadisticas.tasaRespuesta}%</span>
                     <span className="stat-label">Tasa de Respuesta</span>
                   </div>
                 </div>
@@ -586,129 +685,7 @@ const Hablaphone = () => {
               className="tab-configuracion"
             >
               <div className="config-grid">
-                {/* Audio */}
-                <div className="config-section">
-                  <h3>
-                    <FiHeadphones />
-                    Dispositivos de Audio
-                  </h3>
-
-                  <div className="config-group">
-                    <label>
-                      <FiMic />
-                      Micrófono
-                    </label>
-                    <select
-                      value={configAudio.microfono}
-                      onChange={(e) => setConfigAudio({...configAudio, microfono: e.target.value})}
-                    >
-                      <option value="default">Micrófono predeterminado</option>
-                      <option value="headset">Headset USB</option>
-                      <option value="webcam">Micrófono Webcam</option>
-                    </select>
-                  </div>
-
-                  <div className="config-group">
-                    <label>
-                      <FiVolume2 />
-                      Altavoz
-                    </label>
-                    <select
-                      value={configAudio.altavoz}
-                      onChange={(e) => setConfigAudio({...configAudio, altavoz: e.target.value})}
-                    >
-                      <option value="default">Altavoz predeterminado</option>
-                      <option value="headset">Headset USB</option>
-                      <option value="speakers">Altavoces externos</option>
-                    </select>
-                  </div>
-
-                  <div className="config-group">
-                    <label>Volumen Micrófono</label>
-                    <div className="volume-control">
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={configAudio.volumenMic}
-                        onChange={(e) => setConfigAudio({...configAudio, volumenMic: parseInt(e.target.value)})}
-                      />
-                      <span>{configAudio.volumenMic}%</span>
-                    </div>
-                  </div>
-
-                  <div className="config-group">
-                    <label>Volumen Altavoz</label>
-                    <div className="volume-control">
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={configAudio.volumenAltavoz}
-                        onChange={(e) => setConfigAudio({...configAudio, volumenAltavoz: parseInt(e.target.value)})}
-                      />
-                      <span>{configAudio.volumenAltavoz}%</span>
-                    </div>
-                  </div>
-
-                  <button className="btn-test-audio">
-                    <FiPlay />
-                    Probar Audio
-                  </button>
-                </div>
-
-                {/* Preferencias */}
-                <div className="config-section">
-                  <h3>
-                    <FiSettings />
-                    Preferencias
-                  </h3>
-
-                  <div className="config-toggle">
-                    <div className="toggle-info">
-                      <span className="toggle-label">Notificaciones de llamada</span>
-                      <span className="toggle-desc">Mostrar notificación en llamadas entrantes</span>
-                    </div>
-                    <label className="switch">
-                      <input
-                        type="checkbox"
-                        checked={configAudio.notificaciones}
-                        onChange={(e) => setConfigAudio({...configAudio, notificaciones: e.target.checked})}
-                      />
-                      <span className="slider"></span>
-                    </label>
-                  </div>
-
-                  <div className="config-toggle">
-                    <div className="toggle-info">
-                      <span className="toggle-label">Auto-respuesta</span>
-                      <span className="toggle-desc">Contestar automáticamente después de 3 segundos</span>
-                    </div>
-                    <label className="switch">
-                      <input
-                        type="checkbox"
-                        checked={configAudio.autoAnswer}
-                        onChange={(e) => setConfigAudio({...configAudio, autoAnswer: e.target.checked})}
-                      />
-                      <span className="slider"></span>
-                    </label>
-                  </div>
-
-                  <div className="config-toggle">
-                    <div className="toggle-info">
-                      <span className="toggle-label">Grabación automática</span>
-                      <span className="toggle-desc">Grabar todas las llamadas automáticamente</span>
-                    </div>
-                    <label className="switch">
-                      <input
-                        type="checkbox"
-                        checked={configAudio.grabacionAuto}
-                        onChange={(e) => setConfigAudio({...configAudio, grabacionAuto: e.target.checked})}
-                      />
-                      <span className="slider"></span>
-                    </label>
-                  </div>
-                </div>
+                <AudioSettings />
 
                 {/* Cuenta SIP */}
                 <div className="config-section">
@@ -717,22 +694,22 @@ const Hablaphone = () => {
                     Cuenta SIP / FreePBX
                   </h3>
 
-                  <div className="sip-status conectado">
+                  <div className={`sip-status ${sipInfo.estado === 'conectado' ? 'conectado' : 'desconectado'}`}>
                     <div className="status-indicator"></div>
-                    <span>Conectado a FreePBX</span>
+                    <span>{sipInfo.estado === 'conectado' ? 'Conectado a FreePBX' : 'Desconectado'}</span>
                   </div>
 
                   <div className="config-group">
                     <label>Extensión</label>
-                    <input type="text" value="1001" disabled />
+                    <input type="text" value={sipInfo.extension || '—'} disabled />
                   </div>
 
                   <div className="config-group">
                     <label>Servidor</label>
-                    <input type="text" value="pbx.hablagt.com" disabled />
+                    <input type="text" value={sipInfo.servidor || '—'} disabled />
                   </div>
 
-                  <button className="btn-secondary">
+                  <button className="btn-secondary" onClick={handleSipReconnect}>
                     <FiRefreshCw />
                     Reconectar
                   </button>
