@@ -1060,7 +1060,7 @@ function KBDocumentModal({ categories, onClose, onSave }) {
             <label>Tipo
               <select value={form.source_type} onChange={e => { setFileError(''); setForm({ ...clearFile(form), source_type: e.target.value }); }}>
                 <option value="manual">Escribir texto</option>
-                <option value="upload">Subir archivo (PDF, Word o texto)</option>
+                <option value="upload">Subir archivo (PDF, Word, Excel, PowerPoint o texto)</option>
               </select>
             </label>
             {form.source_type === 'manual' && (
@@ -1068,7 +1068,7 @@ function KBDocumentModal({ categories, onClose, onSave }) {
                 placeholder="Ej.: Horario de atención, precios, preguntas frecuentes… La Operadora IA usará este texto para responder." /></label>
             )}
             {form.source_type === 'upload' && (
-              <label>Archivo (PDF, Word .docx, .txt, .md o .csv · hasta 15 MB)
+              <label>Archivo (PDF, Word, Excel, PowerPoint, .txt, .md o .csv · hasta 15 MB)
                 <input type="file" accept={KB_ACCEPT} onChange={onFile} disabled={!!reading} />
                 {reading && <span className="help-text" role="status">{reading}</span>}
                 {form.file_name && !fileError && !reading && <span className="help-text">{form.file_name} · {form.content.length.toLocaleString('es-GT')} caracteres de texto</span>}
