@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
-import { eventService, eventTypeService, contactService } from '../../services';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { eventService, eventTypeService, contactService, agentAdminService } from '../../services';
+import { useAuth } from '../../context/AuthContext';
 import { useLoading } from '../../context/LoadingContext';
 import { useToast } from '../../context/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -62,135 +63,111 @@ const getIconComponent = (iconKey) => {
   return iconosDisponibles[iconKey]?.icon || FiCalendar;
 };
 
-// Datos de ejemplo
-const eventosData = [
-  {
-    id: 1,
-    titulo: 'Llamar a Carlos Mendoza',
-    tipo: 'callback',
-    fecha: '2024-01-15',
-    hora: '09:00',
-    contacto: 'Carlos Mendoza',
-    telefono: '+502 5555-1234',
-    descripcion: 'Seguimiento de cotización enviada',
-    agente: 'Juan Pérez',
-    estado: 'pendiente'
-  },
-  {
-    id: 2,
-    titulo: 'Reunión con equipo de ventas',
-    tipo: 'cita',
-    fecha: '2024-01-15',
-    hora: '11:00',
-    contacto: '',
-    telefono: '',
-    descripcion: 'Revisión de metas mensuales',
-    agente: 'Juan Pérez',
-    estado: 'pendiente'
-  },
-  {
-    id: 3,
-    titulo: 'Enviar propuesta a Importadora Central',
-    tipo: 'tarea',
-    fecha: '2024-01-16',
-    hora: '14:00',
-    contacto: 'Sandra López',
-    telefono: '+502 5555-6789',
-    descripcion: 'Propuesta de servicios actualizada',
-    agente: 'María García',
-    estado: 'pendiente'
-  },
-  {
-    id: 4,
-    titulo: 'Callback - María Fernández',
-    tipo: 'callback',
-    fecha: '2024-01-17',
-    hora: '10:30',
-    contacto: 'María Fernández',
-    telefono: '+502 5555-2345',
-    descripcion: 'Confirmar pedido',
-    agente: 'Carlos López',
-    estado: 'pendiente'
-  },
-  {
-    id: 5,
-    titulo: 'Revisar reportes semanales',
-    tipo: 'recordatorio',
-    fecha: '2024-01-18',
-    hora: '16:00',
-    contacto: '',
-    telefono: '',
-    descripcion: 'Generar y enviar reportes a gerencia',
-    agente: 'Juan Pérez',
-    estado: 'pendiente'
-  },
-  {
-    id: 6,
-    titulo: 'Llamada de seguimiento',
-    tipo: 'callback',
-    fecha: '2024-01-19',
-    hora: '09:30',
-    contacto: 'Roberto Juárez',
-    telefono: '+502 5555-3456',
-    descripcion: 'Consultar estado del pedido',
-    agente: 'Ana Martínez',
-    estado: 'completado'
-  }
-];
-
 const DIAS_SEMANA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+// Fecha local "AAAA-MM-DD". toISOString() da la fecha en UTC: en Guatemala,
+// después de las 18:00 ya es el día siguiente y el evento caía en otro día.
+const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const hoyStr = () => ymd(new Date());
+const sumarDias = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const fechaLarga = (s) => {
+  if (!s) return '';
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('es-GT', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+};
+const apiError = (e, fallback) => e?.response?.data?.error?.message || e?.message || fallback;
+
+const desdeApi = (e) => ({
+  id: e.id,
+  titulo: e.titulo,
+  tipo: e.tipo,
+  fecha: e.fecha ? e.fecha.split('T')[0] : '',
+  hora: e.hora ? e.hora.substring(0, 5) : '',
+  contacto: e.contacto || '',
+  telefono: e.telefono || '',
+  descripcion: e.descripcion || '',
+  agente_id: e.agente_id || '',
+  agente: e.agente_nombre || '',
+  estado: e.estado || 'pendiente',
+});
+
+// Siempre se envía el agente: el backend lo reemplaza en cada edición y las
+// llamadas de recordatorio se saltan los eventos sin agente.
+const aPayload = (ev) => ({
+  titulo: ev.titulo,
+  tipo: ev.tipo,
+  fecha: ev.fecha,
+  hora: ev.hora,
+  contacto: ev.contacto || '',
+  telefono: ev.telefono || '',
+  descripcion: ev.descripcion || '',
+  agente_id: ev.agente_id || '',
+  agente_nombre: ev.agente || '',
+  estado: ev.estado || 'pendiente',
+});
 
 const Agendas = () => {
   const { showLoading, hideLoading } = useLoading();
   const toast = useToast();
+  const { user } = useAuth();
   const [eventos, setEventos] = useState([]);
   const [vista, setVista] = useState('calendario');
   const [fechaActual, setFechaActual] = useState(new Date());
   const [modalEvento, setModalEvento] = useState({ open: false, modo: 'crear', data: null });
   const [filtroTipo, setFiltroTipo] = useState('todos');
-  const [eventoSeleccionado, setEventoSeleccionado] = useState(null);
+  // Se guarda el id: el panel muestra siempre el estado actual del evento.
+  const [seleccionadoId, setSeleccionadoId] = useState(null);
+  const eventoSeleccionado = eventos.find((e) => e.id === seleccionadoId) || null;
+  const setEventoSeleccionado = (ev) => setSeleccionadoId(ev ? ev.id : null);
 
   const [tiposEvento, setTiposEvento] = useState(tiposEventoDefault);
   const [modalTipos, setModalTipos] = useState(false);
+  const [agentes, setAgentes] = useState([]);
 
+  // Tipos de evento y agentes (una vez).
   useEffect(() => {
-    const load = async () => {
-      showLoading('Cargando agenda...');
-      try {
-        const [evs, types] = await Promise.all([
-          eventService.list({ page_size: 100, estado: 'pendiente' }),
-          eventTypeService.list(),
-        ]);
-        const items = evs?.items || evs || [];
-        setEventos(
-          items.map((e) => ({
-            id: e.id,
-            titulo: e.titulo,
-            tipo: e.tipo,
-            fecha: e.fecha ? e.fecha.split('T')[0] : '',
-            hora: e.hora ? e.hora.substring(0, 5) : '',
-            contacto: e.contacto || '',
-            telefono: e.telefono || '',
-            descripcion: e.descripcion || '',
-            agente: e.agente_nombre || '',
-            estado: e.estado || 'pendiente',
-          }))
-        );
+    eventTypeService.list()
+      .then((types) => {
         const typeMap = {};
         (types?.items || types || []).forEach((t) => {
           typeMap[t.key] = { label: t.label, icon: t.icon, color: t.color };
         });
         if (Object.keys(typeMap).length) setTiposEvento({ ...tiposEventoDefault, ...typeMap });
-      } catch (err) {
-        console.error('Error cargando agenda', err);
-      } finally {
-        hideLoading();
-      }
-    };
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      })
+      .catch(() => { /* quedan los tipos por defecto */ });
+    agentAdminService.list({ page_size: 200 })
+      .then((res) => setAgentes((res?.items || res || []).filter((a) => a.is_active !== false)))
+      .catch(() => setAgentes([]));
   }, []);
+
+  // Rango visible: el calendario pide las 6 semanas que muestra (todos los
+  // estados); la lista, los pendientes desde hace 60 días (los vencidos
+  // también se ven). Antes se pedían solo 100 pendientes: los completados
+  // desaparecían del calendario.
+  const rango = useMemo(() => {
+    if (vista === 'lista') {
+      return { fecha_inicio: ymd(sumarDias(new Date(), -60)), estado: 'pendiente' };
+    }
+    const primero = new Date(fechaActual.getFullYear(), fechaActual.getMonth(), 1);
+    const inicio = sumarDias(primero, -primero.getDay());
+    return { fecha_inicio: ymd(inicio), fecha_fin: ymd(sumarDias(inicio, 41)) };
+  }, [vista, fechaActual]);
+
+  const cargarEventos = useCallback(async () => {
+    showLoading('Cargando agenda...');
+    try {
+      const evs = await eventService.list({ page_size: 500, ...rango });
+      setEventos((evs?.items || evs || []).map(desdeApi));
+    } catch (err) {
+      toast.error(apiError(err, 'No se pudo cargar la agenda'));
+    } finally {
+      hideLoading();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rango]);
+
+  useEffect(() => { cargarEventos(); }, [cargarEventos]);
 
   // Obtener días del mes actual
   const diasDelMes = useMemo(() => {
@@ -243,7 +220,7 @@ const Agendas = () => {
 
   // Obtener eventos de una fecha específica
   const getEventosDia = (fecha) => {
-    const fechaStr = fecha.toISOString().split('T')[0];
+    const fechaStr = ymd(fecha);
     return eventosFiltrados.filter(ev => ev.fecha === fechaStr);
   };
 
@@ -283,9 +260,12 @@ const Agendas = () => {
     const nom = (nombre || '').trim();
     if (!tel || !nom) return;
     try {
-      const lista = await contactService.list({ page_size: 200 });
+      // Busca por los dígitos del teléfono en todos los contactos (antes solo
+      // revisaba los primeros 200 y podía duplicar).
       const telNorm = normalizarTelefono(tel);
-      const yaExiste = (lista?.items || []).some((c) => normalizarTelefono(c.telefono_principal) === telNorm);
+      const lista = await contactService.list({ q: telNorm, page_size: 20 });
+      const yaExiste = (lista?.items || []).some((c) =>
+        [c.telefono_principal, c.telefono_movil, c.telefono_trabajo].some((t) => normalizarTelefono(t) === telNorm));
       if (!yaExiste) {
         await contactService.create({ nombre: nom, telefono_principal: tel });
         toast.success(`Se agregó "${nom}" a tus contactos`);
@@ -298,50 +278,19 @@ const Agendas = () => {
   const handleGuardarEvento = async (data) => {
     showLoading(modalEvento.modo === 'crear' ? 'Creando evento...' : 'Guardando...');
     try {
-      const payload = {
-        titulo: data.titulo,
-        tipo: data.tipo,
-        fecha: data.fecha,
-        hora: data.hora,
-        contacto: data.contacto || '',
-        telefono: data.telefono || '',
-        descripcion: data.descripcion || '',
-        estado: data.estado || 'pendiente',
-      };
+      const payload = aPayload(data);
       if (modalEvento.modo === 'crear') {
         const created = await eventService.create(payload);
-        const c = created?.event || created;
-        setEventos([...eventos, {
-          id: c.id,
-          titulo: c.titulo,
-          tipo: c.tipo,
-          fecha: c.fecha ? c.fecha.split('T')[0] : '',
-          hora: c.hora ? c.hora.substring(0, 5) : '',
-          contacto: c.contacto || '',
-          telefono: c.telefono || '',
-          descripcion: c.descripcion || '',
-          agente: c.agente_nombre || '',
-          estado: c.estado || 'pendiente',
-        }]);
+        setEventos((prev) => [...prev, desdeApi(created?.event || created)]);
       } else {
         const updated = await eventService.update(data.id, payload);
-        const c = updated?.event || updated;
-        setEventos(eventos.map((ev) => ev.id === data.id ? {
-          ...ev,
-          titulo: c.titulo,
-          tipo: c.tipo,
-          fecha: c.fecha ? c.fecha.split('T')[0] : '',
-          hora: c.hora ? c.hora.substring(0, 5) : '',
-          contacto: c.contacto || '',
-          telefono: c.telefono || '',
-          descripcion: c.descripcion || '',
-          estado: c.estado || 'pendiente',
-        } : ev));
+        setEventos((prev) => prev.map((ev) => (ev.id === data.id ? desdeApi(updated?.event || updated) : ev)));
       }
       await sincronizarContacto(payload.contacto, payload.telefono);
       setModalEvento({ open: false, modo: 'crear', data: null });
+      toast.success(modalEvento.modo === 'crear' ? 'Evento creado' : 'Cambios guardados');
     } catch (err) {
-      toast.error('Error guardando evento: ' + (err?.response?.data?.error?.message || err.message));
+      toast.error('Error guardando evento: ' + apiError(err, ''));
     } finally {
       hideLoading();
     }
@@ -352,10 +301,10 @@ const Agendas = () => {
     showLoading('Eliminando...');
     try {
       await eventService.remove(id);
-      setEventos(eventos.filter((ev) => ev.id !== id));
+      setEventos((prev) => prev.filter((ev) => ev.id !== id));
       setEventoSeleccionado(null);
     } catch (err) {
-      toast.error('Error eliminando evento: ' + (err?.response?.data?.error?.message || err.message));
+      toast.error('Error eliminando evento: ' + apiError(err, ''));
     } finally {
       hideLoading();
     }
@@ -365,16 +314,17 @@ const Agendas = () => {
     const ev = eventos.find((e) => e.id === id);
     if (!ev) return;
     const next = ev.estado === 'completado' ? 'pendiente' : 'completado';
-    setEventos(eventos.map((e) => e.id === id ? { ...e, estado: next } : e));
+    const cambiar = (estado) => setEventos((prev) => prev.map((e) => (e.id === id ? { ...e, estado } : e)));
+    cambiar(next);
     try {
       if (next === 'completado') {
         await eventService.complete(id);
       } else {
-        await eventService.update(id, { ...ev, estado: next });
+        await eventService.update(id, aPayload({ ...ev, estado: next }));
       }
     } catch (err) {
-      console.error('completar error', err);
-      setEventos(eventos.map((e) => e.id === id ? { ...e, estado: ev.estado } : e));
+      cambiar(ev.estado);
+      toast.error(apiError(err, 'No se pudo cambiar el estado del evento'));
     }
   };
 
@@ -386,7 +336,7 @@ const Agendas = () => {
     setModalEvento({
       open: true,
       modo: 'crear',
-      data: { fecha: fecha.toISOString().split('T')[0] }
+      data: { fecha: ymd(fecha) }
     });
   };
 
@@ -420,7 +370,7 @@ const Agendas = () => {
     showLoading('Eliminando tipo...');
     try {
       await eventTypeService.remove(key);
-      setEventos(eventos.map((ev) => ev.tipo === key ? { ...ev, tipo: 'tarea' } : ev));
+      setEventos((prev) => prev.map((ev) => (ev.tipo === key ? { ...ev, tipo: 'tarea' } : ev)));
       const newTipos = { ...tiposEvento };
       delete newTipos[key];
       setTiposEvento(newTipos);
@@ -588,7 +538,7 @@ const Agendas = () => {
                 exit={{ opacity: 0, y: -20 }}
                 className="lista-container"
               >
-                <h2>Eventos Próximos</h2>
+                <h2>Eventos pendientes</h2>
                 <div className="eventos-lista">
                   {eventosProximos.length > 0 ? (
                     eventosProximos.map(evento => {
@@ -611,8 +561,9 @@ const Agendas = () => {
                             <div className="evento-meta">
                               <span className="evento-fecha">
                                 <FiCalendar />
-                                {evento.fecha}
+                                {fechaLarga(evento.fecha)}
                               </span>
+                              {evento.fecha < hoyStr() && <span className="evento-vencido">Vencido</span>}
                               <span className="evento-hora-lista">
                                 <FiClock />
                                 {evento.hora}
@@ -649,7 +600,7 @@ const Agendas = () => {
                   ) : (
                     <div className="empty-state">
                       <FiCalendar />
-                      <p>No hay eventos próximos</p>
+                      <p>No hay eventos pendientes</p>
                     </div>
                   )}
                 </div>
@@ -707,7 +658,7 @@ const Agendas = () => {
                 <div className="detalle-fecha-hora">
                   <div className="info-item">
                     <FiCalendar />
-                    <span>{eventoSeleccionado.fecha}</span>
+                    <span>{fechaLarga(eventoSeleccionado.fecha)}</span>
                   </div>
                   <div className="info-item">
                     <FiClock />
@@ -774,6 +725,8 @@ const Agendas = () => {
         modo={modalEvento.modo}
         data={modalEvento.data}
         tiposEvento={tiposEvento}
+        agentes={agentes}
+        usuario={user}
         onClose={() => setModalEvento({ open: false, modo: 'crear', data: null })}
         onSave={handleGuardarEvento}
       />
@@ -792,37 +745,37 @@ const Agendas = () => {
 };
 
 // Componente Modal para Eventos
-const ModalEvento = ({ isOpen, modo, data, tiposEvento, onClose, onSave }) => {
-  const [form, setForm] = useState({
+const ModalEvento = ({ isOpen, modo, data, tiposEvento, agentes, usuario, onClose, onSave }) => {
+  // Por defecto el evento queda a nombre de quien lo crea.
+  const vacio = () => ({
     titulo: '',
     tipo: 'callback',
-    fecha: '',
+    fecha: hoyStr(),
     hora: '09:00',
     contacto: '',
     telefono: '',
     descripcion: '',
-    agente: 'Juan Pérez',
-    estado: 'pendiente'
+    agente_id: usuario?.id || '',
+    agente: usuario?.nombre || '',
+    estado: 'pendiente',
   });
+  const [form, setForm] = useState(vacio);
 
   useEffect(() => {
-    if (data) {
-      setForm({ ...form, ...data });
-    } else {
-      const hoy = new Date().toISOString().split('T')[0];
-      setForm({
-        titulo: '',
-        tipo: 'callback',
-        fecha: hoy,
-        hora: '09:00',
-        contacto: '',
-        telefono: '',
-        descripcion: '',
-        agente: 'Juan Pérez',
-        estado: 'pendiente'
-      });
+    if (!isOpen) return;
+    setForm({ ...vacio(), ...(data || {}) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, data]);
+
+  // El agente guardado puede no estar en la lista (inactivo o borrado).
+  const opcionesAgente = useMemo(() => {
+    const list = agentes.map((a) => ({ id: a.id, nombre: a.full_name || a.username }));
+    if (form.agente_id && !list.some((a) => a.id === form.agente_id)) {
+      list.unshift({ id: form.agente_id, nombre: form.agente || 'Agente actual' });
     }
-  }, [data]);
+    if (!list.length && usuario?.id) list.push({ id: usuario.id, nombre: usuario.nombre || 'Yo' });
+    return list;
+  }, [agentes, form.agente_id, form.agente, usuario]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -943,15 +896,19 @@ const ModalEvento = ({ isOpen, modo, data, tiposEvento, onClose, onSave }) => {
             </div>
 
             <div className="form-group">
-              <label>Agente asignado</label>
+              <label htmlFor="evento-agente">Agente asignado</label>
               <select
-                value={form.agente}
-                onChange={(e) => setForm({ ...form, agente: e.target.value })}
+                id="evento-agente"
+                value={form.agente_id}
+                onChange={(e) => {
+                  const a = opcionesAgente.find((x) => x.id === e.target.value);
+                  setForm({ ...form, agente_id: e.target.value, agente: a?.nombre || '' });
+                }}
               >
-                <option value="Juan Pérez">Juan Pérez</option>
-                <option value="María García">María García</option>
-                <option value="Carlos López">Carlos López</option>
-                <option value="Ana Martínez">Ana Martínez</option>
+                <option value="">Sin asignar (no recibe llamada de recordatorio)</option>
+                {opcionesAgente.map((a) => (
+                  <option key={a.id} value={a.id}>{a.nombre}</option>
+                ))}
               </select>
             </div>
 

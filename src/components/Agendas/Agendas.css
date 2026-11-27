@@ -480,6 +480,15 @@
   color: var(--color-gray-500);
 }
 
+.evento-vencido {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 999px;
+  color: var(--color-danger);
+  background: rgba(var(--color-danger-rgb), 0.12);
+}
+
 .evento-fecha svg,
 .evento-hora-lista svg,
 .evento-contacto svg {
