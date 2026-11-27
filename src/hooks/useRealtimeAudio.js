@@ -71,7 +71,7 @@ export function useRealtimeAudio(callId) {
       clientRef.current = null;
     }
     if (callId) {
-      try { await realtimeService.stop(callId); } catch {}
+      try { await realtimeService.stop(callId); } catch { /* la sesión puede haber terminado ya en el servidor */ }
     }
     setStatus("idle");
   }, [callId]);

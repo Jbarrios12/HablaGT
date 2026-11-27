@@ -94,7 +94,7 @@ const Softphone = ({ isOpen, onToggle }) => {
             setCallState('wrapup');
             stopPolling();
           }
-        } catch (err) {
+        } catch {
           // swallow polling errors
         }
       }, 3000);
@@ -166,7 +166,7 @@ const Softphone = ({ isOpen, onToggle }) => {
           duracion: c.duracion_seg || 0,
         }))
       );
-    } catch (err) {
+    } catch {
       // ignore
     }
   };
@@ -218,7 +218,7 @@ const Softphone = ({ isOpen, onToggle }) => {
       return;
     }
     if (realtime.status !== 'idle') {
-      try { await realtime.stop(); } catch {}
+      try { await realtime.stop(); } catch { /* ya se está colgando: un error al detener la IA no importa */ }
     }
     showLoading('Finalizando...');
     try {

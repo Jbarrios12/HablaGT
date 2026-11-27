@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiPlus, FiEdit2, FiTrash2, FiSearch, FiX, FiCpu, FiBook, FiShare2,
   FiChevronLeft, FiChevronRight, FiPlay, FiPause, FiAlertCircle, FiCheck, FiUsers, FiUpload, FiHeadphones, FiLayers
 } from 'react-icons/fi';
 import { campaignService, agentIAService, flowService, kbDocumentService, kbCategoryService, contactListService, extensionService, agentAdminService, intentService, crewService } from '../../services';
-import { useLoading } from '../../context/LoadingContext';
 import { useToast } from '../../context/ToastContext';
 import FlowBuilder from './FlowBuilder';
 import ContactListImport from './ContactListImport';
@@ -25,8 +23,6 @@ const FLOW_STATUS_LABELS = { draft: 'Borrador', published: 'Publicado', archived
 const KB_STATUS_LABELS = { processing: 'Procesando', ready: 'Listo', failed: 'Falló' };
 
 const Campanas = () => {
-  const navigate = useNavigate();
-  const { showLoading, hideLoading } = useLoading();
   const toast = useToast();
   const [tab, setTab] = useState('lista');
   const [campaigns, setCampaigns] = useState([]);
@@ -52,18 +48,12 @@ const Campanas = () => {
 
   const pageSize = 10;
 
-  useEffect(() => {
-    loadCampaigns();
-    loadKBCategories();
-    loadFlows();
-  }, [page, filtroTipo]);
-
   const loadCampaigns = async () => {
     try {
       const res = await campaignService.list({ page, page_size: pageSize, tipo: filtroTipo || undefined, q: busqueda || undefined });
       setCampaigns(res.items || []);
       setTotal(res.total || 0);
-    } catch (e) {
+    } catch {
       setCampaigns([]);
     }
   };
@@ -72,7 +62,7 @@ const Campanas = () => {
     try {
       const res = await agentIAService.list({ campaign_id: campaignId });
       setAgentsIA(res.items || []);
-    } catch (e) {
+    } catch {
       setAgentsIA([]);
     }
   };
@@ -81,7 +71,7 @@ const Campanas = () => {
     try {
       const res = await flowService.list({ page_size: 100 });
       setFlows(res.items || []);
-    } catch (e) {
+    } catch {
       setFlows([]);
     }
   };
@@ -90,7 +80,7 @@ const Campanas = () => {
     try {
       const res = await kbCategoryService.list();
       setKbCategories(res.items || []);
-    } catch (e) {
+    } catch {
       setKbCategories([]);
     }
   };
@@ -99,7 +89,7 @@ const Campanas = () => {
     try {
       const res = await kbDocumentService.list({ category_id: categoryId || undefined });
       setKbDocs(res.items || []);
-    } catch (e) {
+    } catch {
       setKbDocs([]);
     }
   };
@@ -108,10 +98,19 @@ const Campanas = () => {
     try {
       const res = await contactListService.list({ campaign_id: campaignId || undefined });
       setContactLists(res.items || []);
-    } catch (e) {
+    } catch {
       setContactLists([]);
     }
   };
+
+  // Las funciones de carga se recrean en cada render; se recarga solo al
+  // cambiar la página o el filtro (la búsqueda tiene su propio botón).
+  useEffect(() => {
+    loadCampaigns();
+    loadKBCategories();
+    loadFlows();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, filtroTipo]);
 
   const handleCreateCampaign = async (form) => {
     try {
@@ -119,7 +118,7 @@ const Campanas = () => {
       toast.success('Campaña creada');
       setModalCampaign({ open: false, modo: 'crear', data: null });
       loadCampaigns();
-    } catch (e) {
+    } catch {
       toast.error('Error al crear campaña');
     }
   };
@@ -131,7 +130,7 @@ const Campanas = () => {
       setModalCampaign({ open: false, modo: 'crear', data: null });
       setSelectedCampaign(null);
       loadCampaigns();
-    } catch (e) {
+    } catch {
       toast.error('Error al actualizar campaña');
     }
   };
@@ -143,7 +142,7 @@ const Campanas = () => {
       toast.success('Campaña eliminada');
       setSelectedCampaign(null);
       loadCampaigns();
-    } catch (e) {
+    } catch {
       toast.error('Error al eliminar campaña');
     }
   };
@@ -160,7 +159,7 @@ const Campanas = () => {
       }
       setModalAgentIA({ open: false, modo: 'crear', data: null });
       loadAgentsIA(selectedCampaign?.id);
-    } catch (e) {
+    } catch {
       toast.error(editando ? 'Error al actualizar agente IA' : 'Error al crear agente IA');
     }
   };
@@ -171,7 +170,7 @@ const Campanas = () => {
       await agentIAService.remove(id);
       toast.success('Agente IA eliminado');
       loadAgentsIA(selectedCampaign?.id);
-    } catch (e) {
+    } catch {
       toast.error('Error al eliminar agente IA');
     }
   };
@@ -182,7 +181,7 @@ const Campanas = () => {
       toast.success('Flow creado');
       setModalFlow({ open: false, modo: 'crear', data: null });
       loadFlows();
-    } catch (e) {
+    } catch {
       toast.error('Error al crear flow');
     }
   };
@@ -192,7 +191,7 @@ const Campanas = () => {
       await flowService.deploy(id);
       toast.success('Flow desplegado');
       loadFlows();
-    } catch (e) {
+    } catch {
       toast.error('Error al desplegar flow');
     }
   };
@@ -203,7 +202,7 @@ const Campanas = () => {
       toast.success('Documento creado');
       setModalKBDoc({ open: false, data: null });
       loadKBDocs();
-    } catch (e) {
+    } catch {
       toast.error('Error al crear documento');
     }
   };
@@ -214,7 +213,7 @@ const Campanas = () => {
       await kbDocumentService.remove(id);
       toast.success('Documento eliminado');
       loadKBDocs();
-    } catch (e) {
+    } catch {
       toast.error('Error al eliminar documento');
     }
   };
@@ -391,7 +390,7 @@ const Campanas = () => {
   );
 };
 
-function CampaignDetail({ campaign, onCampaignSaved, agentsIA, flows, kbDocs, kbCategories, contactLists, onBack, onUpdate, onDelete, onAddAgentIA, onEditAgentIA, onDeleteAgentIA, onAddFlow, onDeployFlow, onEditFlow, onAddKBDoc, onDeleteKBDoc, loadKBDocs, loadKBCategories, loadContactLists, onOpenContactListImport }) {
+function CampaignDetail({ campaign, onCampaignSaved, agentsIA, flows, kbDocs, kbCategories, contactLists, onBack, onUpdate, onDelete, onAddAgentIA, onEditAgentIA, onDeleteAgentIA, onAddFlow, onDeployFlow, onEditFlow, onAddKBDoc, onDeleteKBDoc, loadKBDocs, loadKBCategories, onOpenContactListImport }) {
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState({ nombre: campaign.nombre, descripcion: campaign.descripcion || '', tipo: campaign.tipo, timezone: campaign.timezone || 'UTC' });
   const [subtab, setSubtab] = useState('agentes');

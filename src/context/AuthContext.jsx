@@ -116,7 +116,7 @@ export const AuthProvider = ({ children }) => {
     const refresh = tokenStorage.getRefresh();
     try {
       if (refresh) await authService.logout(refresh);
-    } catch (err) {
+    } catch {
       // ignore network errors on logout
     }
     tokenStorage.clear();

@@ -99,13 +99,9 @@ const Dashboard = () => {
   const entrantes = summary?.entrantes_hoy || 0;
   const salientes = summary?.salientes_hoy || 0;
   const perdidas = summary?.perdidas_hoy || 0;
-  const completadas = summary?.completadas_hoy || 0;
-  const avgDur = summary?.duracion_promedio_seg || 0;
-  const ocupacion = summary?.ocupacion_pct || 0;
   const distribucion = summary?.distribucion_horaria || [];
   const recientes = summary?.llamadas_recientes || [];
   const agentes = summary?.agentes || [];
-  const topAgentes = summary?.top_agentes || [];
 
   const statsCards = [
     { title: 'Llamadas Hoy', value: totalHoy, change: '', changeType: 'positive', icon: FiPhone, color: 'blue' },

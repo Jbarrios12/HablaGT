@@ -83,7 +83,7 @@ const Header = ({ onMenuClick }) => {
         link: n.link,
       })));
       setUnreadCount(res?.unread_count ?? items.filter((n) => !n.read).length);
-    } catch (err) {
+    } catch {
       // ignore
     }
   };
