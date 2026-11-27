@@ -297,10 +297,13 @@ function useUndoRedo(nodes, edges, setNodes, setEdges) {
     setFuture([]);
   }, []);
 
+  // A propósito solo al agregar o quitar nodos/conexiones: con snapshot como
+  // dependencia se guardaría un paso de "deshacer" por cada arrastre.
   useEffect(() => {
     if (nodes.length > 0 || edges.length > 0) {
       pushSnapshot(snapshot());
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes.length, edges.length]);
 
   const undo = useCallback(() => {
@@ -411,8 +414,10 @@ function FlowBuilder({ flowId, onBack }) {
     }
   }, [nodes, reactFlowInstance]);
 
+  // Se carga solo cuando cambia el flujo (loadFlow se recrea en cada render).
   useEffect(() => {
     if (flowId) loadFlow(flowId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flowId]);
 
   const loadFlow = async (id) => {

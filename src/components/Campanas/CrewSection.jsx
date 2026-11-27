@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiPlus, FiEdit2, FiTrash2, FiX, FiPlay, FiTool, FiUsers, FiArrowUp, FiArrowDown, FiCheck, FiZap, FiAlertCircle, FiActivity, FiTarget, FiDatabase, FiGlobe,
@@ -140,7 +140,7 @@ export default function CrewSection() {
   const [testCrew, setTestCrew] = useState(null);
   const [view, setView] = useState('equipos');
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const [c, t] = await Promise.all([crewService.list(), aiToolService.list()]);
       setCrews(c?.items || []);
@@ -151,9 +151,9 @@ export default function CrewSection() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const toolLabel = (ref) => {
     const b = builtinTools.find((t) => t.id === ref);

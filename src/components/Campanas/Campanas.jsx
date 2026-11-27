@@ -597,7 +597,7 @@ function HumanAgentsSection({ campaign, onSaved }) {
       }
     })();
     return () => { alive = false; };
-  }, []);
+  }, [toast]);
 
   const toggle = (ext) => {
     setMembers((m) => (m.includes(ext) ? m.filter((x) => x !== ext) : [...m, ext]));
@@ -712,6 +712,9 @@ function KnowledgeBaseSection({ kbDocs, kbCategories, onAdd, onDelete, loadKBDoc
     }
   };
 
+  // loadKBDocs viene del componente padre y se recrea en cada render:
+  // con él como dependencia se recargaría en bucle. Solo al cambiar el filtro.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadKBDocs(catFilter); }, [catFilter]);
 
   return (
