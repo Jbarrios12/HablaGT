@@ -26,34 +26,6 @@ import { useToast } from '../../context/ToastContext';
 import { useRealtimeEvents } from '../../hooks/useRealtimeEvents';
 import './Reporteria.css';
 
-// Datos de ejemplo para CDR con grabaciones
-const cdrData = [
-  { id: 1, fecha: '2024-01-15 09:23:45', origen: '1001', destino: '+502 5555-1234', tipo: 'outgoing', duracion: '05:23', estado: 'answered', agente: 'Juan Pérez', grabacion: true },
-  { id: 2, fecha: '2024-01-15 09:45:12', origen: '+502 4444-5678', destino: '1002', tipo: 'incoming', duracion: '02:15', estado: 'answered', agente: 'María García', grabacion: true },
-  { id: 3, fecha: '2024-01-15 10:02:33', origen: '+502 3333-9012', destino: '1001', tipo: 'missed', duracion: '00:00', estado: 'no-answer', agente: 'Juan Pérez', grabacion: false },
-  { id: 4, fecha: '2024-01-15 10:15:08', origen: '1003', destino: '+502 2222-3456', tipo: 'outgoing', duracion: '08:47', estado: 'answered', agente: 'Carlos López', grabacion: true },
-  { id: 5, fecha: '2024-01-15 10:45:22', origen: '+502 1111-7890', destino: '1002', tipo: 'incoming', duracion: '03:02', estado: 'answered', agente: 'María García', grabacion: true },
-  { id: 6, fecha: '2024-01-15 11:05:17', origen: '1001', destino: '+502 6666-4321', tipo: 'outgoing', duracion: '00:00', estado: 'busy', agente: 'Juan Pérez', grabacion: false },
-  { id: 7, fecha: '2024-01-15 11:23:45', origen: '+502 7777-8765', destino: '1003', tipo: 'incoming', duracion: '12:34', estado: 'answered', agente: 'Carlos López', grabacion: true },
-  { id: 8, fecha: '2024-01-15 11:45:00', origen: '+502 8888-2345', destino: '1001', tipo: 'missed', duracion: '00:00', estado: 'no-answer', agente: 'Juan Pérez', grabacion: false },
-  { id: 9, fecha: '2024-01-15 12:10:33', origen: '1002', destino: '+502 9999-6789', tipo: 'outgoing', duracion: '04:56', estado: 'answered', agente: 'María García', grabacion: true },
-  { id: 10, fecha: '2024-01-15 12:35:18', origen: '+502 1234-5678', destino: '1003', tipo: 'incoming', duracion: '07:22', estado: 'answered', agente: 'Carlos López', grabacion: true },
-];
-
-// Datos para gráfico de barras
-const hourlyData = [
-  { hora: '08:00', llamadas: 12 },
-  { hora: '09:00', llamadas: 25 },
-  { hora: '10:00', llamadas: 38 },
-  { hora: '11:00', llamadas: 45 },
-  { hora: '12:00', llamadas: 32 },
-  { hora: '13:00', llamadas: 18 },
-  { hora: '14:00', llamadas: 52 },
-  { hora: '15:00', llamadas: 48 },
-  { hora: '16:00', llamadas: 35 },
-  { hora: '17:00', llamadas: 22 },
-];
-
 const fmtSeg = (s) => `${Math.floor((s || 0) / 60)}:${String(Math.floor((s || 0) % 60)).padStart(2, '0')}`;
 
 const Reporteria = () => {

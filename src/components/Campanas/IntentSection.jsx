@@ -88,7 +88,7 @@ export default function IntentSection({ crews, tools, builtinTools }) {
 
   return (
     <div className="crew-section">
-      <BusinessTemplate intents={intents} onApplied={load} />
+      <BusinessTemplate onApplied={load} />
       <TestPhrase intents={intents} actionLabel={actionLabel} />
 
       <div className="sub-section">
@@ -144,7 +144,7 @@ export default function IntentSection({ crews, tools, builtinTools }) {
 // recognized and what would run. Nothing is executed.
 // BusinessTemplate offers the suggested intents of a giro (the tenant's
 // one first) and creates the ones the tenant does not have.
-function BusinessTemplate({ intents, onApplied }) {
+function BusinessTemplate({ onApplied }) {
   const toast = useToast();
   const { businessType, businessTypes, templates } = useModules();
   const options = businessTypes.filter((b) => templates[b.key] > 0);

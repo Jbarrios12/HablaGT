@@ -178,7 +178,7 @@ export class RealtimeAudioClient {
       }
     };
 
-    this.ws.onerror = (event) => {
+    this.ws.onerror = () => {
       this.onError(new Error("WebSocket error"));
     };
 
@@ -198,8 +198,8 @@ export class RealtimeAudioClient {
   // pipeline STT -> orquestador -> TTS sobre toda la frase.
   interruptPlayback() {
     for (const src of this._sourceNodes) {
-      try { src.stop(); } catch {}
-      try { src.disconnect(); } catch {}
+      try { src.stop(); } catch { /* el nodo de audio ya estaba detenido */ }
+      try { src.disconnect(); } catch { /* el nodo de audio ya estaba detenido */ }
     }
     this._sourceNodes = [];
     this.nextPlayTime = this.audioContext?.currentTime || 0;
@@ -238,11 +238,11 @@ export class RealtimeAudioClient {
     if (this.closed) return;
     this.closed = true;
     if (this.ws) {
-      try { this.ws.close(); } catch {}
+      try { this.ws.close(); } catch { /* cerrando: puede estar cerrado ya */ }
       this.ws = null;
     }
     if (this.scriptNode) {
-      try { this.scriptNode.disconnect(); } catch {}
+      try { this.scriptNode.disconnect(); } catch { /* cerrando: puede estar cerrado ya */ }
       this.scriptNode = null;
     }
     if (this.mediaStream) {
@@ -250,7 +250,7 @@ export class RealtimeAudioClient {
       this.mediaStream = null;
     }
     if (this.audioContext) {
-      try { await this.audioContext.close(); } catch {}
+      try { await this.audioContext.close(); } catch { /* cerrando: puede estar cerrado ya */ }
       this.audioContext = null;
     }
   }

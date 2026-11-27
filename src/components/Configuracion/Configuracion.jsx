@@ -29,25 +29,6 @@ import ReminderSettings from './ReminderSettings';
 import { useModules } from '../../context/ModulesContext';
 import './Configuracion.css';
 
-// Datos de ejemplo - Extensiones
-const extensionesData = [
-  { id: 1, extension: '1001', nombre: 'Recepción Principal', tipo: 'fija', estado: 'activa', agente: 'Juan Pérez' },
-  { id: 2, extension: '1002', nombre: 'Ventas 1', tipo: 'softphone', estado: 'activa', agente: 'María García' },
-  { id: 3, extension: '1003', nombre: 'Soporte Técnico', tipo: 'softphone', estado: 'activa', agente: 'Carlos López' },
-  { id: 4, extension: '1004', nombre: 'Sala Conferencias', tipo: 'fija', estado: 'activa', agente: null },
-  { id: 5, extension: '1005', nombre: 'Ventas 2', tipo: 'softphone', estado: 'inactiva', agente: null },
-  { id: 6, extension: '1006', nombre: 'Gerencia', tipo: 'fija', estado: 'activa', agente: 'Ana Martínez' },
-];
-
-// Datos de ejemplo - Agentes
-const agentesData = [
-  { id: 1, usuario: 'jperez', nombre: 'Juan Pérez', email: 'juan@empresa.com', rol: 'admin', extension: '1001', estado: 'activo' },
-  { id: 2, usuario: 'mgarcia', nombre: 'María García', email: '', rol: 'agente', extension: '1002', estado: 'activo' },
-  { id: 3, usuario: 'clopez', nombre: 'Carlos López', email: 'carlos@empresa.com', rol: 'agente', extension: '1003', estado: 'activo' },
-  { id: 4, usuario: 'amartinez', nombre: 'Ana Martínez', email: '', rol: 'supervisor', extension: '1006', estado: 'activo' },
-  { id: 5, usuario: 'rrodriguez', nombre: 'Roberto Rodríguez', email: 'roberto@empresa.com', rol: 'agente', extension: null, estado: 'inactivo' },
-];
-
 const Configuracion = () => {
   const { showLoading, hideLoading } = useLoading();
   const toast = useToast();

@@ -9,7 +9,6 @@ import ReactFlow, {
   ReactFlowProvider,
   Handle,
   Position,
-  useReactFlow,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -436,7 +435,7 @@ function FlowBuilder({ flowId, onBack }) {
       if (flow.definition?.edges) {
         setEdges(withEdgeIds(flow.definition.edges));
       }
-    } catch (e) {
+    } catch {
       toast.error('Error al cargar flow');
     } finally {
       hideLoading();
@@ -597,7 +596,7 @@ function FlowBuilder({ flowId, onBack }) {
           onBack && onBack(res.flow.id);
         }
       }
-    } catch (e) {
+    } catch {
       toast.error('Error al guardar flow');
     } finally {
       setSaving(false);
@@ -614,7 +613,7 @@ function FlowBuilder({ flowId, onBack }) {
       await flowService.deploy(flowId);
       toast.success('Flow desplegado');
       setFlowStatus('published');
-    } catch (e) {
+    } catch {
       toast.error('Error al desplegar');
     }
   };

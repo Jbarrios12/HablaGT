@@ -23,7 +23,17 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      // El no-unused-vars base no ve los usos en JSX: <Componente /> (de ahí
+      // la mayúscula), <motion.div> de framer-motion y los componentes que
+      // llegan como parámetro ({ icon: Icon }).
+      'no-unused-vars': ['error', { varsIgnorePattern: '^([A-Z_]|motion$)', argsIgnorePattern: '^[A-Z_]' }],
+      // Advertencias, no errores: marcan patrones válidos que se usan a
+      // propósito (copiar datos al formulario al abrir un modal, cerrar el
+      // menú al navegar, leer la sesión al arrancar, contexto + su hook en
+      // el mismo archivo). Así un error de ESLint es siempre un problema real.
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/purity': 'warn',
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },
 ])
